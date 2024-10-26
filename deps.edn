@@ -1,0 +1,15 @@
+{:paths ["src" "resources"]
+
+ :deps  {clj-fuzzy/clj-fuzzy {:mvn/version "0.4.1"}
+         fipp/fipp           {:mvn/version "0.6.26"}}
+
+ :aliases
+ {:dev
+  {:extra-deps {criterium/criterium {:mvn/version "0.4.6"}}}
+
+  :test
+  {:extra-paths ["test"]
+   :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
+                                                       :git/sha "dfb30dd"}}}
+  }
+ }

@@ -1,0 +1,40 @@
+**/classes
+**/log
+**/out
+**/target
+**/.artifacts
+**/.cpcache
+**/.DS_Store
+**/.env
+
+*.jar
+*.class
+
+# Polylith-specific
+/components/**/target
+#/projects/**/pom.xml
+
+# IDEA / Cursive
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/shelf
+.idea/**/statistic.xml
+.idea/dictionaries/**
+.idea/libraries/**
+.idea/replstate.xml
+*.iml
+*.iws
+*.ipr
+
+# nREPL
+.nrepl-port
+
+# clojure-lsp
+.lsp/.cache
+
+# clj-kondo
+.clj-kondo/.cache
+
+# Calva VS Code Extension
+.calva/output-window/output.calva-repl

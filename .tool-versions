@@ -1,0 +1,4 @@
+clojure latest
+babashka latest
+clj-kondo latest
+cljstyle latest
