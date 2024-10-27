@@ -2,6 +2,7 @@
   (:require [clj-fuzzy.metrics :as fuzzy-metrics]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [clojure.tools.cli :as cli]
             [fipp.edn :refer [pprint]]))
 
 ;; patterns
@@ -40,47 +41,53 @@
   (fuzzy-metrics/hamming char-seq-1 char-seq-2))
 
 (defn find-matches
-  [pattern-str text]
-  (let [[pattern-width pattern-height
-         :as pattern-dims] (text-dimensions pattern-str)
-        pattern-size     (* pattern-width pattern-height)
-        pattern-char-seq (pattern->char-seq pattern-str)
-        text-char-seqs   (text-str->char-seqs text)
-        [text-width text-height] (text-dimensions text)]
-    ;; TODO: Account for edge cases. Invaders may fit partially along the text borders.
-    (for [idy (range (- text-height pattern-height))
-          idx (range (- text-width pattern-width))
-          :let [location         [idx idy]
-                subtext-char-seq (extract-subtext-char-seq text-char-seqs
-                                                           idx idy
-                                                           pattern-width pattern-height)
-                distance         (calc-distance pattern-char-seq subtext-char-seq)
-                accuracy         (- 100.0 (/ distance pattern-size))]
-          :when (<= 99.8 accuracy)]
-      {:match/pattern  {:pattern/text pattern-str
-                        :pattern/dims pattern-dims}
-       :match/location location
-       :match/distance distance
-       :match/accuracy accuracy
-       :match/char-seq subtext-char-seq})))
+  ([pattern-str text]
+   (find-matches pattern-str text nil))
+  ([pattern-str text {:keys [min-accuracy]
+                      :or   {min-accuracy 99.8}
+                      :as   _opts}]
+   (let [text-char-seqs   (text-str->char-seqs text)
+         [text-width text-height] (text-dimensions text)
+         [pattern-width pattern-height
+          :as pattern-dims] (text-dimensions pattern-str)
+         pattern-size     (* pattern-width pattern-height)
+         pattern-char-seq (pattern->char-seq pattern-str)]
+     ;; TODO: Account for edge cases. Invaders may fit partially along the text borders.
+     (for [idy (range (- text-height pattern-height))
+           idx (range (- text-width pattern-width))
+           :let [location         [idx idy]
+                 subtext-char-seq (extract-subtext-char-seq text-char-seqs
+                                                            idx idy
+                                                            pattern-width pattern-height)
+                 distance         (calc-distance pattern-char-seq subtext-char-seq)
+                 accuracy         (- 100.0 (/ distance pattern-size))]
+           :when (<= min-accuracy accuracy)]
+       {:match/pattern  {:pattern/text pattern-str
+                         :pattern/dims pattern-dims}
+        :match/location location
+        :match/distance distance
+        :match/accuracy accuracy
+        :match/char-seq subtext-char-seq}))))
 
 ;; main logic (high-level)
 
-;; TODO: Impl configurable "sensitivity" of the search.
-
-(defn find-invader
-  [{:invader/keys [pattern] :as _invader} radar-sample]
-  (find-matches pattern radar-sample))
+(defn- find-invader
+  [{:invader/keys [pattern] :as _invader} radar-sample opts]
+  (find-matches pattern radar-sample opts))
 
 (defn find-invaders
-  [invaders radar-sample]
-  (reduce (fn [res {invader-type :invader/type :as invader}]
-            (let [matches (find-invader invader radar-sample)]
-              (if (seq matches)
-                (assoc res invader-type matches)
-                res)))
-          {}
-          invaders))
+  ([invaders radar-sample]
+   (find-invaders invaders radar-sample nil))
+  ([invaders radar-sample {:keys [sensitivity] :as _opts}]
+   (let [opts' (cond-> {}
+                       (some? sensitivity) (assoc :min-accuracy sensitivity))]
+     (reduce (fn [res {invader-type :invader/type :as invader}]
+               (let [matches (find-invader invader radar-sample opts')]
+                 (if (seq matches)
+                   (assoc res invader-type matches)
+                   res)))
+             {}
+             invaders))))
 
 ;; I/O and entrypoint
 
@@ -107,20 +114,37 @@
 (defn print-results [results]
   (if-some [res-seq (seq results)]
     (doseq [[invader-type matches] res-seq]
-      (println (format "Found %s possible '%s' invader matches"
+      (println (format "Found %s possible '%s' invader matches:"
                        (count matches) (name invader-type)))
       (doseq [output-match (->> matches
                                 (sort-by :match/distance)
                                 (map #(->output-match %)))]
         (pprint output-match))
       (println))
-    (println "Nobody found")))
+    (println "No invaders were found.")))
 
-(defn -main [& _args]
+(def cli-options-spec
+  [["-s" "--sensitivity SENSITIVITY"
+    "Search sensitivity in percent between 0 (exclusive) and 100 (inclusive)."
+    :default 99.8
+    :parse-fn Float/parseFloat
+    :validate [#(and (float? %) (< 0 %) (<= % 100))
+               "Must be a floating point number in the range (0 .. 100]."]]
+   ["-h" "--help"]])
+
+;; TODO: Implement the '--help' CLI argument processing.
+(defn -main [& args]
   (doseq [invader invaders]
     (validate-text-pattern (:invader/pattern invader)))
-  (let [results (find-invaders invaders (prepare-text radar-sample))]
-    (print-results results)))
+  (let [opts    (:options (cli/parse-opts args cli-options-spec))
+        results (find-invaders invaders (prepare-text radar-sample) opts)]
+    (print-results results)
+    nil))
+
+(comment
+  (-main)
+  (-main "--sensitivity" "99.7")
+  .)
 
 ;;
 
