@@ -1,5 +1,6 @@
 (ns space-invaders.core
-  (:require [clj-fuzzy.metrics :as fuzzy-metrics]
+  (:require [clansi.core :refer [style]]
+            [clj-fuzzy.metrics :as fuzzy-metrics]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.cli :as cli]
@@ -7,8 +8,16 @@
 
 ;; patterns
 
-;; TODO: Implement an invader text pattern validation.
-(defn validate-text-pattern [_pattern-str])
+(defn validate-text-pattern [pattern-str]
+  (let [pattern-lines (str/split-lines pattern-str)]
+    (cond
+      (seq (mapcat #(remove #{\- \o} %) pattern-lines))
+      {:error/msg  "Pattern must contain only valid characters"
+       :error/data {:pattern-lines pattern-lines}}
+      ;;
+      (not= 1 (count (set (map count pattern-lines))))
+      {:error/msg  "Pattern lines have to be of the same length"
+       :error/data {:pattern-lines pattern-lines}})))
 
 (defn pattern->char-seq [pattern-str]
   (remove #{\newline} (seq pattern-str)))
@@ -73,7 +82,11 @@
 
 (defn- find-invader
   [{:invader/keys [pattern] :as _invader} radar-sample opts]
-  (find-matches pattern radar-sample opts))
+  (if-some [{:error/keys [msg data]} (validate-text-pattern pattern)]
+    (do (println (style msg :red))
+        (println (style (with-out-str (pprint data)) :red))
+        nil)
+    (find-matches pattern radar-sample opts)))
 
 (defn find-invaders
   ([invaders radar-sample]
@@ -134,8 +147,6 @@
 
 ;; TODO: Implement the '--help' CLI argument processing.
 (defn -main [& args]
-  (doseq [invader invaders]
-    (validate-text-pattern (:invader/pattern invader)))
   (let [opts    (:options (cli/parse-opts args cli-options-spec))
         results (find-invaders invaders (prepare-text radar-sample) opts)]
     (print-results results)

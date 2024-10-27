@@ -1,6 +1,7 @@
 (ns space-invaders.core-test
-  (:require [expectations.clojure.test
-             :refer [approximately defexpect expect expecting more-> more-of]]
+  (:require [clojure.string :as str]
+            [expectations.clojure.test
+             :refer [approximately defexpect expect expecting in more-> more-of]]
             [space-invaders.core :as sut]))
 
 (defn ≈ [^double v]
@@ -8,6 +9,38 @@
 
 (defn char-seq [str-vec]
   (mapcat seq str-vec))
+
+(defn ->pattern-str [str-vec]
+  (str/join \newline str-vec))
+
+;;
+
+(defexpect validate-text-pattern-test
+  (expecting "Task test data patterns are valid"
+    (doseq [valid-pattern (map :invader/pattern sut/invaders)]
+      (expect nil? (sut/validate-text-pattern valid-pattern))))
+  (expecting "Pattern must contain only valid characters"
+    (expect {:error/msg "Pattern must contain only valid characters"}
+            (in (sut/validate-text-pattern
+                  (->pattern-str ["--o-----o--"
+                                  "---o---x---"
+                                  "--ooooooo--"
+                                  "-oo-ooo-oo-"
+                                  "ooooooooooo"
+                                  "o-ooooooo-o"
+                                  "o-o-----o-o"
+                                  "---oo-oo---"])))))
+  (expecting "Pattern lines have to be of the same length"
+    (expect {:error/msg "Pattern lines have to be of the same length"}
+            (in (sut/validate-text-pattern
+                  (->pattern-str ["--o-----o--"
+                                  "---o---o-"
+                                  "--ooooooo--"
+                                  "-oo-ooo-oo-"
+                                  "ooooooooooo"
+                                  "o-ooooooo-o"
+                                  "o-o-----o-o"
+                                  "---oo-oo---"]))))))
 
 ;;
 
@@ -103,7 +136,7 @@
 
             (sut/find-invaders sut/invaders sut/radar-sample)))
 
-  (expecting "Happy path works at 99.8% sensitivity — task test data"
+  (expecting "Happy path works at 99.7% sensitivity — task test data"
     (expect (more->
               #{:invader.type/squid :invader.type/crab} (-> keys set)
 
@@ -248,6 +281,8 @@
               :invader.type/crab)
 
             (sut/find-invaders sut/invaders sut/radar-sample {:sensitivity 99.7}))))
+
+;;
 
 (comment
   (expectations.clojure.test/run-tests)
