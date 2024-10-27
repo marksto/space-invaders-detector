@@ -24,8 +24,7 @@
 (defn extract-subtext-char-seq
   [char-seqs idx idy width height]
   (->> char-seqs
-       (drop idy)
-       (take height)
+       (drop idy) (take height)
        (mapcat #(->> % (drop idx) (take width)))))
 
 ;; pattern matching & calcs
@@ -39,26 +38,6 @@
   (assert (= (count char-seq-1) (count char-seq-2))
           "The Hamming distance is only defined for seqs of the same length")
   (fuzzy-metrics/hamming char-seq-1 char-seq-2))
-
-#_(defn matches-subtext-at-loc?
-    [pattern-char-seq text-char-seqs
-     [idx idy :as _loc]
-     [pattern-width pattern-height :as _pattern-dims]
-     distance-threshold]
-    (let [subtext-char-seq (extract-subtext-char-seq text-char-seqs
-                                                     idx idy
-                                                     pattern-width pattern-height)
-          distance         (calc-distance pattern-char-seq subtext-char-seq)]
-      (<= distance distance-threshold)))
-
-#_(defn pattern-subtext-distance
-    [pattern-char-seq text-char-seqs
-     [idx idy :as _loc]
-     pattern-width pattern-height]
-    (let [subtext-char-seq (extract-subtext-char-seq text-char-seqs
-                                                     idx idy
-                                                     pattern-width pattern-height)]
-      (calc-distance pattern-char-seq subtext-char-seq)))
 
 (defn find-matches
   [pattern-str text]
@@ -84,16 +63,6 @@
        :match/distance distance
        :match/accuracy accuracy
        :match/char-seq subtext-char-seq})))
-
-(comment
-  (let [[idx idy] [74 1]
-        [pattern-width pattern-height] [11 8]]
-    (->> (extract-subtext-char-seq (text-str->char-seqs radar-sample)
-                                   idx idy
-                                   pattern-width pattern-height)
-         (partition pattern-width)
-         (mapv #(apply str %))))
-  .)
 
 ;; main logic (high-level)
 
