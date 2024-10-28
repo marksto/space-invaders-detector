@@ -81,16 +81,18 @@
 (defn ->pattern-match
   [p-char-seq p-dims
    i-char-seqs i-loc
-   min-accuracy]
+   min-accuracy
+   partial-match?]
   (let [i-subseq (extract-char-subseq i-char-seqs i-loc p-dims)
         distance (calc-distance p-char-seq i-subseq)
         accuracy (- 100.0 (/ distance (count p-char-seq)))]
     (when (<= min-accuracy accuracy)
-      {:match/location  i-loc
-       :match/dimension p-dims
-       :match/char-seq  i-subseq
-       :match/distance  distance
-       :match/accuracy  accuracy})))
+      (cond-> {:match/location  i-loc
+               :match/dimension p-dims
+               :match/char-seq  i-subseq
+               :match/distance  distance
+               :match/accuracy  accuracy}
+              (true? partial-match?) (assoc :match/partial? true)))))
 
 (defmulti edge-base-locs
   (fn [edge-kind _pattern _input] edge-kind))
@@ -183,7 +185,7 @@
                                   (when-some [match (->pattern-match
                                                       p-char-subseq p-dims
                                                       i-char-seqs shifted-i-loc
-                                                      min-accuracy)]
+                                                      min-accuracy true)]
                                     (reduced match))))
                               nil
                               edge-shifts)]
@@ -212,7 +214,7 @@
           idx (range (inc (- i-width p-width)))
           :let [match (->pattern-match p-char-seq p-dims
                                        i-char-seqs [idx idy]
-                                       min-accuracy)]
+                                       min-accuracy false)]
           :when (some? match)]
       match)))
 
@@ -287,15 +289,23 @@
 (def radar-sample (read-text-file "radar_samples/sample-1.txt"))
 
 (defn- ->output-match
-  [{:match/keys [location dimension char-seq distance accuracy] :as _match}]
-  {:location location
-   :distance distance
-   :accuracy (format "%.2f%%" accuracy)
-   :matching (->> char-seq
-                  (partition (first dimension))
-                  (interpose \newline)
-                  (flatten)
-                  (apply str))})
+  [{:match/keys [location dimension char-seq distance accuracy partial?]
+    :as         _match}]
+  (cond-> {:location location
+           #_#_:distance distance ; for debug purposes
+           :accuracy (format "%.2f%%" accuracy)
+           :matching (->> char-seq
+                          (partition (first dimension))
+                          (interpose \newline)
+                          (flatten)
+                          (apply str))}
+          (true? partial?) (assoc :partial? true)))
+
+(def matches-comp
+  "Compares matches first by their `char-seq` length (the bigger the better),
+   and then by `accuracy` of the match (again, the bigger the better)."
+  (juxt (comp - count :match/char-seq)
+        (comp - :match/accuracy)))
 
 (defn print-results [results]
   (if-some [res-seq (seq results)]
@@ -303,7 +313,7 @@
       (println (format "Found %s possible '%s' invader matches:"
                        (count matches) (name invader-type)))
       (doseq [output-match (->> matches
-                                (sort-by :match/distance)
+                                (sort-by matches-comp)
                                 (map ->output-match))]
         (pprint output-match))
       (println))
