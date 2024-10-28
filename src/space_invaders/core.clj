@@ -77,107 +77,116 @@
        :match/distance  distance
        :match/accuracy  accuracy})))
 
-(defn- top-edge-shifts
-  [{[p-width p-height] :pattern/dims :as _pattern}]
-  (->> (range 1 p-height)
+(defmulti edge-shifts
+  (fn [edge-kind _pattern _min-sub-pattern] edge-kind))
+
+(defmethod edge-shifts :top
+  [_ {[p-width p-height] :pattern/dims :as _pattern} min-sub-pattern]
+  (->> (inc (- p-height min-sub-pattern))
+       (range 1)
        (map (fn [y-shift]
               {:shift/pattern-loc  [0 y-shift]
                :shift/pattern-dims [p-width (- p-height y-shift)]}))))
 
-(defn- top-base-edge-locs
-  [{[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector % 0)
-       (range (inc (- i-width p-width)))))
-
-(defn- left-edge-shifts
-  [{[p-width p-height] :pattern/dims :as _pattern}]
-  (->> (range 1 p-width)
+(defmethod edge-shifts :left
+  [_ {[p-width p-height] :pattern/dims :as _pattern} min-sub-pattern]
+  (->> (inc (- p-width min-sub-pattern))
+       (range 1 p-width)
        (map (fn [x-shift]
               {:shift/pattern-loc  [x-shift 0]
                :shift/pattern-dims [(- p-width x-shift) p-height]}))))
 
-(defn- left-base-edge-locs
-  [{[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector 0 %)
-       (range (inc (- i-height p-height)))))
-
-(defn- bottom-edge-shifts
-  [{[p-width p-height] :pattern/dims :as _pattern}]
-  (->> (range 1 p-height)
+(defmethod edge-shifts :bottom
+  [_ {[p-width p-height] :pattern/dims :as _pattern} min-sub-pattern]
+  (->> (inc (- p-height min-sub-pattern))
+       (range 1)
        (map (fn [y-shift]
               {:shift/pattern-loc  [0 0]
                :shift/pattern-dims [p-width (- p-height y-shift)]
                :shift/input-loc-fn (fn [[idx idy]] [idx (+ idy y-shift)])}))))
 
-(defn- bottom-base-edge-locs
-  [{[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector % (- i-height p-height))
-       (range (inc (- i-width p-width)))))
-
-(defn- right-edge-shifts
-  [{[p-width p-height] :pattern/dims :as _pattern}]
-  (->> (range 1 p-width)
+(defmethod edge-shifts :right
+  [_ {[p-width p-height] :pattern/dims :as _pattern} min-sub-pattern]
+  (->> (inc (- p-width min-sub-pattern))
+       (range 1)
        (map (fn [x-shift]
               {:shift/pattern-loc  [0 0]
                :shift/pattern-dims [(- p-width x-shift) p-height]
                :shift/input-loc-fn (fn [[idx idy]] [(+ idx x-shift) idy])}))))
 
-(defn- right-base-edge-locs
-  [{[p-width p-height] :pattern/dims :as _pattern}
+(defmulti edge-base-locs
+  (fn [edge-kind _pattern _input] edge-kind))
+
+(defmethod edge-base-locs :top
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector % 0)
+       (range (inc (- i-width p-width)))))
+
+(defmethod edge-base-locs :left
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector 0 %)
+       (range (inc (- i-height p-height)))))
+
+(defmethod edge-base-locs :bottom
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector % (- i-height p-height))
+       (range (inc (- i-width p-width)))))
+
+(defmethod edge-base-locs :right
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
    {[i-width i-height] :input/dims :as _input}]
   (map #(vector (- i-width p-width) %)
        (range (inc (- i-height p-height)))))
 
 (defn- find-edge-matches
-  [edge-shifts-fn edge-base-locs-fn
+  [edge-kind
    {p-char-seqs :pattern/char-seqs :as pattern}
    {i-char-seqs :input/char-seqs :as input}
+   min-sub-pattern
    min-accuracy]
-  (reduce
-    (fn [matches base-loc]
-      (if-some [new-match (reduce
-                            (fn [_ {p-loc    :shift/pattern-loc
-                                    p-dims   :shift/pattern-dims
-                                    i-loc-fn :shift/input-loc-fn}]
-                              (let [p-char-subseq (extract-char-subseq
-                                                    p-char-seqs
-                                                    p-loc p-dims)
-                                    shifted-i-loc (if (some? i-loc-fn)
-                                                    (i-loc-fn base-loc)
-                                                    base-loc)]
-                                (when-some [match (->pattern-match
-                                                    p-char-subseq p-dims
-                                                    i-char-seqs shifted-i-loc
-                                                    min-accuracy)]
-                                  (reduced match))))
-                            nil
-                            (edge-shifts-fn pattern))]
-        (conj matches new-match)
-        matches))
-    []
-    (edge-base-locs-fn pattern input)))
+  (let [edge-shifts    (edge-shifts edge-kind pattern min-sub-pattern)
+        edge-base-locs (edge-base-locs edge-kind pattern input)]
+    (reduce
+      (fn [matches base-loc]
+        (if-some [new-match (reduce
+                              (fn [_ {p-loc    :shift/pattern-loc
+                                      p-dims   :shift/pattern-dims
+                                      i-loc-fn :shift/input-loc-fn}]
+                                (let [p-char-subseq (extract-char-subseq
+                                                      p-char-seqs
+                                                      p-loc p-dims)
+                                      shifted-i-loc (if (some? i-loc-fn)
+                                                      (i-loc-fn base-loc)
+                                                      base-loc)]
+                                  (when-some [match (->pattern-match
+                                                      p-char-subseq p-dims
+                                                      i-char-seqs shifted-i-loc
+                                                      min-accuracy)]
+                                    (reduced match))))
+                              nil
+                              edge-shifts)]
+          (conj matches new-match)
+          matches))
+      []
+      edge-base-locs)))
 
 (defn- find-matches-on-edges
-  [pattern input min-accuracy]
-  (let [top-edge-matches    (find-edge-matches
-                              top-edge-shifts top-base-edge-locs
-                              pattern input min-accuracy)
-        left-edge-matches   (find-edge-matches
-                              left-edge-shifts left-base-edge-locs
-                              pattern input min-accuracy)
-        bottom-edge-matches (find-edge-matches
-                              bottom-edge-shifts bottom-base-edge-locs
-                              pattern input min-accuracy)
-        right-edge-matches  (find-edge-matches
-                              right-edge-shifts right-base-edge-locs
-                              pattern input min-accuracy)]
-    (concat top-edge-matches
-            left-edge-matches
-            bottom-edge-matches
-            right-edge-matches)))
+  [pattern input min-sub-pattern min-accuracy]
+  (concat (find-edge-matches :top
+                             pattern input min-sub-pattern min-accuracy)
+          (find-edge-matches :left
+                             pattern input min-sub-pattern min-accuracy)
+          (find-edge-matches :bottom
+                             pattern input min-sub-pattern min-accuracy)
+          (find-edge-matches :right
+                             pattern input min-sub-pattern min-accuracy)))
 
 (defn- find-full-matches
   [{pattern-str :pattern/text [p-width p-height :as p-dims] :pattern/dims :as _pattern}
@@ -193,10 +202,20 @@
       match)))
 
 (defn find-matches
+  {:arglists '([pattern-str input-str]
+               [pattern-str input-str {:keys [min-accuracy
+                                              search-on-edges
+                                              min-sub-pattern]
+                                       :or   {min-accuracy    99.8
+                                              min-sub-pattern 1}
+                                       :as   _opts}])}
   ([pattern-str input-str]
    (find-matches pattern-str input-str nil))
-  ([pattern-str input-str {:keys [min-accuracy]
-                           :or   {min-accuracy 99.8}
+  ([pattern-str input-str {:keys [min-accuracy
+                                  search-on-edges
+                                  min-sub-pattern]
+                           :or   {min-accuracy    99.8
+                                  min-sub-pattern 1}
                            :as   _opts}]
    (let [pattern {:pattern/text      pattern-str
                   :pattern/dims      (text-dimensions pattern-str)
@@ -205,10 +224,18 @@
                   :input/dims      (text-dimensions input-str)
                   :input/char-seqs (text-str->char-seqs input-str)}]
      (concat (find-full-matches pattern input min-accuracy)
-             (when nil
-               (find-matches-on-edges pattern input min-accuracy))))))
+             (when search-on-edges
+               (find-matches-on-edges
+                 pattern input min-sub-pattern min-accuracy))))))
 
 ;; main logic (high-level)
+
+(defn- prepare-search-opts
+  [{:keys [sensitivity edges edges-cut-off] :as _opts}]
+  (cond-> {}
+          (some? sensitivity) (assoc :min-accuracy sensitivity)
+          (true? edges) (assoc :search-on-edges true)
+          (some? edges-cut-off) (assoc :min-sub-pattern edges-cut-off)))
 
 (defn- find-invader
   [{:invader/keys [pattern] :as _invader} radar-sample opts]
@@ -219,14 +246,16 @@
     (find-matches pattern radar-sample opts)))
 
 (defn find-invaders
+  {:arglists '([invaders radar-sample]
+               [invaders radar-sample {:keys [sensitivity edges edges-cut-off]
+                                       :as   _opts}])}
   ([invaders radar-sample]
    (find-invaders invaders radar-sample nil))
-  ([invaders radar-sample {:keys [sensitivity] :as _opts}]
+  ([invaders radar-sample opts]
    (let [radar-sample' (prepare-input-str radar-sample)
-         opts'         (cond-> {}
-                               (some? sensitivity) (assoc :min-accuracy sensitivity))]
+         search-opts   (prepare-search-opts opts)]
      (reduce (fn [res {invader-type :invader/type :as invader}]
-               (let [matches (find-invader invader radar-sample' opts')]
+               (let [matches (find-invader invader radar-sample' search-opts)]
                  (if (seq matches)
                    (assoc res invader-type matches)
                    res)))
@@ -269,7 +298,6 @@
       (println))
     (println "No invaders were found.")))
 
-;; TODO: Add an option for turning off edges matching & tuning them up (1, 2+).
 (def cli-options-spec
   [["-s" "--sensitivity SENSITIVITY"
     "Search sensitivity in percent between 0 (exclusive) and 100 (inclusive)."
@@ -277,6 +305,15 @@
     :parse-fn Float/parseFloat
     :validate [#(and (float? %) (< 0 %) (<= % 100))
                "Must be a floating point number in the range (0 .. 100]."]]
+   ["-e" "--edges ON"
+    "Turns off/on the search along edges of the input string (radar sample)."
+    :default true
+    :parse-fn Boolean/parseBoolean]
+   [nil "--edges-cut-off LINES"
+    "Sets a cut-off (minimum number of lines) for searching along the edges."
+    :default 1
+    :parse-fn #(Integer/parseInt %)
+    :validate [pos-int? "Must be a positive natural number."]]
    ["-h" "--help"]])
 
 ;; TODO: Implement the '--help' CLI argument processing.
@@ -289,6 +326,9 @@
 (comment
   (-main)
   (-main "--sensitivity" "99.7")
+  (-main "--edges" "false")
+  (-main "--edges" "true" "--edges-cut-off" "2")
+  (-main "--edges" "true" "--edges-cut-off" "3")
   .)
 
 ;;
