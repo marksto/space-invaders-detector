@@ -15,13 +15,13 @@
 
 ;;
 
-(defexpect validate-text-pattern-test
+(defexpect validate-pattern-str-test
   (expecting "Task test data patterns are valid"
     (doseq [valid-pattern (map :invader/pattern sut/invaders)]
-      (expect nil? (sut/validate-text-pattern valid-pattern))))
+      (expect nil? (sut/validate-pattern-str valid-pattern))))
   (expecting "Pattern must contain only valid characters"
     (expect {:error/msg "Pattern must contain only valid characters"}
-            (in (sut/validate-text-pattern
+            (in (sut/validate-pattern-str
                   (->pattern-str ["--o-----o--"
                                   "---o---x---"
                                   "--ooooooo--"
@@ -32,7 +32,7 @@
                                   "---oo-oo---"])))))
   (expecting "Pattern lines have to be of the same length"
     (expect {:error/msg "Pattern lines have to be of the same length"}
-            (in (sut/validate-text-pattern
+            (in (sut/validate-pattern-str
                   (->pattern-str ["--o-----o--"
                                   "---o---o-"
                                   "--ooooooo--"
