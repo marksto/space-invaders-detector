@@ -6,34 +6,7 @@
             [clojure.tools.cli :as cli]
             [fipp.edn :refer [pprint]]))
 
-;; patterns
-
-(defn validate-pattern-str [pattern-str]
-  (let [pattern-lines (str/split-lines pattern-str)]
-    (cond
-      (seq (mapcat #(remove #{\- \o} %) pattern-lines))
-      {:error/msg  "Pattern must contain only valid characters"
-       :error/data {:pattern-lines pattern-lines}}
-      ;;
-      (not= 1 (count (set (map count pattern-lines))))
-      {:error/msg  "Pattern lines have to be of the same length"
-       :error/data {:pattern-lines pattern-lines}})))
-
-#_(defn ->sub-pattern
-    [char-seq [width height]]
-    (let [char-seqs (partition width char-seq)]
-      {:pattern/sub?      true
-       :pattern/text      (str/join (flatten (interpose \newline char-seqs)))
-       :pattern/dims      [width height]
-       :pattern/char-seqs char-seqs}))
-
-;; input strings
-
-;; TODO: Impl an input string preparation (lines padding, dims >= pattern dims).
-(defn prepare-input-str [input-str]
-  input-str)
-
-;; pattern matching
+;; text manipulations
 
 (defn text-dimensions [text-str]
   (let [text-lines (str/split-lines text-str)]
@@ -50,6 +23,48 @@
   (->> char-seqs
        (drop idy) (take height)
        (mapcat #(->> % (drop idx) (take width)))))
+
+;; patterns
+
+(def valid-pattern-chars #{\- \o})
+
+(defn validate-pattern-str [pattern-str]
+  (let [pattern-lines (str/split-lines pattern-str)]
+    (cond
+      (seq (mapcat #(remove valid-pattern-chars %) pattern-lines))
+      {:error/msg  "Pattern must contain only valid characters"
+       :error/data {:pattern-lines pattern-lines}}
+      ;;
+      (not= 1 (count (set (map count pattern-lines))))
+      {:error/msg  "Pattern lines have to be of the same length"
+       :error/data {:pattern-lines pattern-lines}})))
+
+(defn ->pattern [pattern-str]
+  {:pattern/text      pattern-str
+   :pattern/dims      (text-dimensions pattern-str)
+   :pattern/char-seqs (text-str->char-seqs pattern-str)})
+
+#_(defn ->sub-pattern
+    [char-seq [width height]]
+    (let [char-seqs (partition width char-seq)]
+      {:pattern/sub?      true
+       :pattern/text      (str/join (flatten (interpose \newline char-seqs)))
+       :pattern/dims      [width height]
+       :pattern/char-seqs char-seqs}))
+
+;; input strings
+
+;; TODO: Impl an input string preparation (lines padding, dims >= pattern dims).
+(defn prepare-input-str [input-str]
+  input-str)
+
+(defn ->input
+  [input-str]
+  {:input/text      input-str
+   :input/dims      (text-dimensions input-str)
+   :input/char-seqs (text-str->char-seqs input-str)})
+
+;; pattern matching
 
 (defn extract-char-subseq+
   [char-seqs [idx idy] [width height]]
@@ -76,6 +91,37 @@
        :match/char-seq  i-subseq
        :match/distance  distance
        :match/accuracy  accuracy})))
+
+(defmulti edge-base-locs
+  (fn [edge-kind _pattern _input] edge-kind))
+
+(defmethod edge-base-locs :top
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector % 0)
+       (range (inc (- i-width p-width)))))
+
+(defmethod edge-base-locs :left
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector 0 %)
+       (range (inc (- i-height p-height)))))
+
+(defmethod edge-base-locs :bottom
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector % (- i-height p-height))
+       (range (inc (- i-width p-width)))))
+
+(defmethod edge-base-locs :right
+  [_
+   {[p-width p-height] :pattern/dims :as _pattern}
+   {[i-width i-height] :input/dims :as _input}]
+  (map #(vector (- i-width p-width) %)
+       (range (inc (- i-height p-height)))))
 
 (defmulti edge-shifts
   (fn [edge-kind _pattern _min-sub-pattern] edge-kind))
@@ -114,45 +160,14 @@
                :shift/pattern-dims [(- p-width x-shift) p-height]
                :shift/input-loc-fn (fn [[idx idy]] [(+ idx x-shift) idy])}))))
 
-(defmulti edge-base-locs
-  (fn [edge-kind _pattern _input] edge-kind))
-
-(defmethod edge-base-locs :top
-  [_
-   {[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector % 0)
-       (range (inc (- i-width p-width)))))
-
-(defmethod edge-base-locs :left
-  [_
-   {[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector 0 %)
-       (range (inc (- i-height p-height)))))
-
-(defmethod edge-base-locs :bottom
-  [_
-   {[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector % (- i-height p-height))
-       (range (inc (- i-width p-width)))))
-
-(defmethod edge-base-locs :right
-  [_
-   {[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
-  (map #(vector (- i-width p-width) %)
-       (range (inc (- i-height p-height)))))
-
 (defn- find-edge-matches
   [edge-kind
    {p-char-seqs :pattern/char-seqs :as pattern}
    {i-char-seqs :input/char-seqs :as input}
    min-sub-pattern
    min-accuracy]
-  (let [edge-shifts    (edge-shifts edge-kind pattern min-sub-pattern)
-        edge-base-locs (edge-base-locs edge-kind pattern input)]
+  (let [edge-base-locs (edge-base-locs edge-kind pattern input)
+        edge-shifts    (edge-shifts edge-kind pattern min-sub-pattern)]
     (reduce
       (fn [matches base-loc]
         (if-some [new-match (reduce
@@ -217,12 +232,8 @@
                            :or   {min-accuracy    99.8
                                   min-sub-pattern 1}
                            :as   _opts}]
-   (let [pattern {:pattern/text      pattern-str
-                  :pattern/dims      (text-dimensions pattern-str)
-                  :pattern/char-seqs (text-str->char-seqs pattern-str)}
-         input   {:input/text      input-str
-                  :input/dims      (text-dimensions input-str)
-                  :input/char-seqs (text-str->char-seqs input-str)}]
+   (let [pattern (->pattern pattern-str)
+         input   (->input input-str)]
      (concat (find-full-matches pattern input min-accuracy)
              (when search-on-edges
                (find-matches-on-edges
