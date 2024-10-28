@@ -44,14 +44,6 @@
    :pattern/dims      (text-dimensions pattern-str)
    :pattern/char-seqs (text-str->char-seqs pattern-str)})
 
-#_(defn ->sub-pattern
-    [char-seq [width height]]
-    (let [char-seqs (partition width char-seq)]
-      {:pattern/sub?      true
-       :pattern/text      (str/join (flatten (interpose \newline char-seqs)))
-       :pattern/dims      [width height]
-       :pattern/char-seqs char-seqs}))
-
 ;; input strings
 
 ;; TODO: Impl an input string preparation (lines padding, dims >= pattern dims).
@@ -65,12 +57,6 @@
    :input/char-seqs (text-str->char-seqs input-str)})
 
 ;; pattern matching
-
-(defn extract-char-subseq+
-  [char-seqs [idx idy] [width height]]
-  (->> char-seqs
-       (drop idy) (take height)
-       (map #(->> % (drop idx) (take width)))))
 
 (defn calc-distance
   [char-seq-1 char-seq-2]
@@ -95,19 +81,20 @@
               (true? partial-match?) (assoc :match/partial? true)))))
 
 (defmulti edge-base-locs
-  (fn [edge-kind _pattern _input] edge-kind))
+  (fn [edge-kind _pattern _input]
+    edge-kind))
 
 (defmethod edge-base-locs :top
   [_
-   {[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
+   {[p-width] :pattern/dims :as _pattern}
+   {[i-width] :input/dims :as _input}]
   (map #(vector % 0)
        (range (inc (- i-width p-width)))))
 
 (defmethod edge-base-locs :left
   [_
-   {[p-width p-height] :pattern/dims :as _pattern}
-   {[i-width i-height] :input/dims :as _input}]
+   {[_ p-height] :pattern/dims :as _pattern}
+   {[_ i-height] :input/dims :as _input}]
   (map #(vector 0 %)
        (range (inc (- i-height p-height)))))
 
@@ -126,7 +113,8 @@
        (range (inc (- i-height p-height)))))
 
 (defmulti edge-shifts
-  (fn [edge-kind _pattern _min-sub-pattern] edge-kind))
+  (fn [edge-kind _pattern _min-sub-pattern]
+    edge-kind))
 
 (defmethod edge-shifts :top
   [_ {[p-width p-height] :pattern/dims :as _pattern} min-sub-pattern]
