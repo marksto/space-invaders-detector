@@ -44,6 +44,52 @@
 
 ;;
 
+(defexpect find-invader-test
+  (expecting "An exact match is found with 100% accuracy — squid"
+    (let [squid-invader-pattern (sut/read-text-file "invaders/squid.txt")]
+      (expect (more-of [m1 :as matches]
+                       (expect 1 (count matches))
+                       (expect (more-> [0 0] :match/location
+                                       [8 8] :match/dimension
+                                       0 :match/distance
+                                       100.0 :match/accuracy
+                                       (char-seq ["---oo---"
+                                                  "--oooo--"
+                                                  "-oooooo-"
+                                                  "oo-oo-oo"
+                                                  "oooooooo"
+                                                  "--o--o--"
+                                                  "-o-oo-o-"
+                                                  "o-o--o-o"]) :match/char-seq)
+                               m1))
+              (sut/find-invader {:invader/type    :invader.type/squid
+                                 :invader/pattern squid-invader-pattern}
+                                squid-invader-pattern
+                                {}))))
+  (expecting "An exact match is found with 100% accuracy — crab"
+    (let [crab-invader-pattern (sut/read-text-file "invaders/crab.txt")]
+      (expect (more-of [m1 :as matches]
+                       (expect 1 (count matches))
+                       (expect (more-> [0 0] :match/location
+                                       [11 8] :match/dimension
+                                       0 :match/distance
+                                       100.0 :match/accuracy
+                                       (char-seq ["--o-----o--"
+                                                  "---o---o---"
+                                                  "--ooooooo--"
+                                                  "-oo-ooo-oo-"
+                                                  "ooooooooooo"
+                                                  "o-ooooooo-o"
+                                                  "o-o-----o-o"
+                                                  "---oo-oo---"]) :match/char-seq)
+                               m1))
+              (sut/find-invader {:invader/type    :invader.type/crab
+                                 :invader/pattern crab-invader-pattern}
+                                crab-invader-pattern
+                                {})))))
+
+;;
+
 (defexpect find-invaders-test
   (expecting "Happy path works at 99.8% sensitivity — task test data"
     (expect (more->
