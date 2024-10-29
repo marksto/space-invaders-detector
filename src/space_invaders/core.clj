@@ -309,6 +309,42 @@
       (println))
     (println "No invaders were found.")))
 
+(defn print-radar-sample-with-matches
+  [invaders radar-sample results]
+  (let [[width height] (text-dimensions radar-sample)
+        char-seqs           (text-str->char-seqs radar-sample)
+        invader-type->color (->> [:red :green :blue :yellow :magenta :cyan]
+                                 (interleave (map :invader/type invaders))
+                                 (apply assoc {}))
+        x->y->match-char    (reduce-kv
+                              (fn [acc invader-type matches]
+                                (let [color (get invader-type->color invader-type)]
+                                  (loop [acc acc, [match & m-rest] matches]
+                                    (if (some? match)
+                                      (recur
+                                        (let [{:match/keys [dimension char-seq]
+                                               [mx my]     :match/location} match
+                                              idy+m-lines (->> char-seq
+                                                               (partition (first dimension))
+                                                               (map-indexed (fn [idy m-line] [idy m-line])))]
+                                          (reduce (fn [acc [idy m-line]]
+                                                    (reduce (fn [acc idx]
+                                                              (assoc-in acc [(+ mx idx) (+ my idy)]
+                                                                        (style (nth m-line idx) color)))
+                                                            acc
+                                                            (range (count m-line))))
+                                                  acc
+                                                  idy+m-lines))
+                                        m-rest)
+                                      acc))))
+                              {}
+                              results)]
+    (doseq [idy (range height)]
+      (println (apply str (map (fn [idx]
+                                 (or (get-in x->y->match-char [idx idy])
+                                     (nth (nth char-seqs idy) idx)))
+                               (range width)))))))
+
 (def cli-options-spec
   [["-s" "--sensitivity SENSITIVITY"
     "Search sensitivity in percent between 0 (exclusive) and 100 (inclusive)."
@@ -332,14 +368,15 @@
   (let [opts    (:options (cli/parse-opts args cli-options-spec))
         results (find-invaders invaders radar-sample opts)]
     (print-results results)
+    (print-radar-sample-with-matches invaders radar-sample results)
     nil))
 
 (comment
   (-main)
-  (-main "--sensitivity" "99.7")
+  (-main "--edges-cut-off" "2")
+  (-main "--edges-cut-off" "3")
   (-main "--edges" "false")
-  (-main "--edges" "true" "--edges-cut-off" "2")
-  (-main "--edges" "true" "--edges-cut-off" "3")
+  (-main "--edges" "false" "--sensitivity" "99.725")
   .)
 
 ;;
