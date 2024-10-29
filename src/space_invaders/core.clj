@@ -1,5 +1,6 @@
 (ns space-invaders.core
-  (:require [clansi.core :refer [style]]
+  (:require [babashka.fs :as fs]
+            [clansi.core :refer [style]]
             [clj-fuzzy.metrics :as fuzzy-metrics]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -286,20 +287,35 @@
                  {}
                  invaders))))))
 
+;;
+
+(def example-radar-sample-path
+  "space_invaders/radar_samples/example.txt")
+
+(def default-invader-pattern-paths
+  ["space_invaders/invaders/squid.txt"
+   "space_invaders/invaders/crab.txt"])
+
+(declare read-text-file)
+
+(defn built-invaders
+  ([]
+   (built-invaders nil))
+  ([invader-pattern-paths]
+   (reduce (fn [res pattern-path]
+             (let [filename        (fs/strip-ext (fs/file-name pattern-path))
+                   invader-pattern (read-text-file pattern-path)]
+               (conj res {:invader/type    (keyword filename)
+                          :invader/pattern invader-pattern})))
+           []
+           (or (seq invader-pattern-paths)
+               default-invader-pattern-paths))))
+
 ;; I/O and entrypoint
 
-(defn read-text-file [file-path]
-  (slurp (io/resource (format "space_invaders/%s" file-path))))
-
-(def invaders
-  [{:invader/type    :invader.type/squid
-    :invader/pattern (read-text-file "invaders/squid.txt")}
-   {:invader/type    :invader.type/crab
-    :invader/pattern (read-text-file "invaders/crab.txt")}])
-
-(def radar-sample (read-text-file "radar_samples/sample-1.txt"))
-
-;;
+(defn read-text-file [path]
+  (some-> (or (io/resource path) (io/file path))
+          (slurp)))
 
 (defn print-validation-error
   [{:error/keys [msg data] :as _error}]
@@ -336,21 +352,20 @@
         (pprint output-match))
       (println))))
 
-(def invader-type->color
-  (delay
-    (let [predefined-colors [:red :green :blue :yellow :magenta :cyan]
-          invader-types     (distinct (map :invader/type invaders))]
-      (when (< (count predefined-colors)
-               (count invader-types))
-        (println
-          (style "Not enough predefined colors for all invader types" :yellow)))
-      (zipmap invader-types (concat predefined-colors (repeat :black))))))
+(defn invader-type->color [invaders]
+  (let [predefined-colors [:red :green :blue :yellow :magenta :cyan]
+        invader-types     (distinct (map :invader/type invaders))]
+    (when (< (count predefined-colors)
+             (count invader-types))
+      (println
+        (style "Not enough predefined colors for all invader types" :yellow)))
+    (zipmap invader-types (concat predefined-colors (repeat :black)))))
 
 (defn- build-loc->match-char
-  [results]
+  [results invader-type->color]
   (reduce-kv
     (fn [acc invader-type matches]
-      (let [color (get @invader-type->color invader-type)]
+      (let [color (get invader-type->color invader-type)]
         (loop [acc acc, matches matches]
           (if (seq matches)
             (recur
@@ -372,12 +387,13 @@
     results))
 
 (defn print-radar-sample-with-matches
-  [radar-sample results]
+  [invaders radar-sample results]
   (when (seq results)
     (println "Possible invaders on the radar sample:")
     (let [[width height] (text-dimensions radar-sample)
-          char-seqs       (text-str->char-seqs radar-sample)
-          loc->match-char (build-loc->match-char results)]
+          char-seqs           (text-str->char-seqs radar-sample)
+          invader-type->color (invader-type->color invaders)
+          loc->match-char     (build-loc->match-char results invader-type->color)]
       (doseq [idy (range height)]
         (println (apply str (map (fn [idx]
                                    (or (get loc->match-char [idx idy])
@@ -386,7 +402,12 @@
     (println)))
 
 (def cli-options-spec
-  [["-s" "--sensitivity SENSITIVITY"
+  [["-i" "--invader PATH"
+    "Path to a text file with an invader pattern to search for on the radar."
+    :multi true
+    :default []
+    :update-fn conj]
+   ["-s" "--sensitivity SENSITIVITY"
     "Search sensitivity in percent in range 0 (exclusive) — 100 (inclusive)."
     :default 99.8
     :parse-fn Float/parseFloat
@@ -409,7 +430,11 @@
             ["Takes invader patterns and a radar sample as arguments and reveals possible locations of those pesky invaders."
              ""
              "USAGE"
-             "  clojure -M:run [options]"
+             "  clojure -M:run [option ...] [radar_sample]"
+             ""
+             "ARGUMENTS"
+             "  radar_sample  A path to a text file with the radar sample."
+             "                If not specified, an example sample is used."
              ""
              "OPTIONS"
              options-summary]))
@@ -424,7 +449,8 @@
    should exit (with a single `:do-exit` key), or a map with input and options
    to the program."
   [args]
-  (let [{:keys [options summary errors]} (cli/parse-opts args cli-options-spec)]
+  (let [{:keys [options summary errors arguments]} (cli/parse-opts
+                                                     args cli-options-spec)]
     (cond
       (:help options) ; => exit w/ help summary
       {:do-exit {:status-code 0
@@ -433,7 +459,8 @@
       {:do-exit {:status-code 1
                  :output-msg  (args-error-msg errors)}}
       :else
-      {:options options})))
+      {:radar-sample-path (or (first arguments) example-radar-sample-path)
+       :options           options})))
 
 (defn- exit
   [{:keys [status-code output-msg]}]
@@ -441,20 +468,21 @@
   (System/exit status-code))
 
 (defn -main [& args]
-  (let [{:keys [do-exit options]} (validate-args args)]
+  (let [{:keys [do-exit radar-sample-path options]} (validate-args args)]
     (if do-exit
       (exit do-exit)
       (try
-        (let [results (find-invaders invaders radar-sample options)]
+        (let [radar-sample (read-text-file radar-sample-path)
+              invaders     (built-invaders (:invader options))
+              results      (find-invaders invaders radar-sample options)]
           (print-results results)
-          (print-radar-sample-with-matches radar-sample results)
+          (print-radar-sample-with-matches invaders radar-sample results)
           (exit {:status-code 0
                  :output-msg  (when (seq results)
                                 "Show this to the commander, quickly!")}))
         (catch Exception ex
           (exit {:status-code 2
-                 :output-msg  (style (format "Something went wrong: %s"
-                                             (ex-message ex))
+                 :output-msg  (style (format "Something went wrong:\n%s" ex)
                                      :red)}))))))
 
 (comment
