@@ -242,7 +242,7 @@
 
 ;; main logic (high-level)
 
-(declare print-error)
+(declare print-validation-error)
 
 (defn max-invader-dims
   [invaders]
@@ -262,7 +262,7 @@
 (defn- find-invader
   [{:invader/keys [pattern] :as _invader} radar-sample opts]
   (if-some [error (validate-pattern-str pattern)]
-    (do (print-error error)
+    (do (print-validation-error error)
         nil)
     (find-matches pattern radar-sample opts)))
 
@@ -275,7 +275,7 @@
   ([invaders radar-sample opts]
    (let [max-invader-dims (max-invader-dims invaders)]
      (if-some [error (validate-input-str radar-sample max-invader-dims)]
-       (do (print-error error)
+       (do (print-validation-error error)
            nil)
        (let [search-opts (prepare-search-opts opts)]
          (reduce (fn [res {invader-type :invader/type :as invader}]
@@ -301,7 +301,7 @@
 
 ;;
 
-(defn print-error
+(defn print-validation-error
   [{:error/keys [msg data] :as _error}]
   (println (style msg :red))
   (println (style (with-out-str (pprint data)) :red)))
@@ -387,7 +387,7 @@
 
 (def cli-options-spec
   [["-s" "--sensitivity SENSITIVITY"
-    "Search sensitivity in percent between 0 (exclusive) and 100 (inclusive)."
+    "Search sensitivity in percent in range 0 (exclusive) — 100 (inclusive)."
     :default 99.8
     :parse-fn Float/parseFloat
     :validate [#(and (float? %) (< 0 %) (<= % 100))
@@ -401,15 +401,61 @@
     :default 1
     :parse-fn #(Integer/parseInt %)
     :validate [pos-int? "Must be a positive natural number."]]
-   ["-h" "--help"]])
+   ["-h" "--help"
+    "Shows this very help message."]])
 
-;; TODO: Implement the '--help' CLI argument processing. Also, exit with `0`.
+(defn- show-help-msg [options-summary]
+  (str/join \newline
+            ["Takes invader patterns and a radar sample as arguments and reveals possible locations of those pesky invaders."
+             ""
+             "USAGE"
+             "  clojure -M:run [options]"
+             ""
+             "OPTIONS"
+             options-summary]))
+
+(defn args-error-msg [errors]
+  (style (str "The following errors occurred while parsing your command:\n"
+              (str/join \newline errors))
+         :red))
+
+(defn- validate-args
+  "Validate command line arguments. Either return a map indicating the program
+   should exit (with a single `:do-exit` key), or a map with input and options
+   to the program."
+  [args]
+  (let [{:keys [options summary errors]} (cli/parse-opts args cli-options-spec)]
+    (cond
+      (:help options) ; => exit w/ help summary
+      {:do-exit {:status-code 0
+                 :output-msg  (show-help-msg summary)}}
+      errors ; => exit w/ description of errors
+      {:do-exit {:status-code 1
+                 :output-msg  (args-error-msg errors)}}
+      :else
+      {:options options})))
+
+(defn- exit
+  [{:keys [status-code output-msg]}]
+  (when output-msg (println output-msg))
+  (System/exit status-code))
+
 (defn -main [& args]
-  (let [opts    (:options (cli/parse-opts args cli-options-spec))
-        results (find-invaders invaders radar-sample opts)]
-    (print-results results)
-    (print-radar-sample-with-matches radar-sample results)
-    nil))
+  (let [{:keys [do-exit options]} (validate-args args)]
+    (if do-exit
+      (exit do-exit)
+      (try
+        (let [results (find-invaders invaders radar-sample options)]
+          (print-results results)
+          (print-radar-sample-with-matches radar-sample results)
+          (exit {:status-code 0
+                 :output-msg  (when (seq results)
+                                "Show this to the commander, quickly!")}))
+        (catch Exception ex
+          (exit {:status-code 2
+                 :output-msg  (style (format "Something went wrong: %s"
+                                             (ex-message ex))
+                                     :red)}))))))
 
 (comment
   (-main)
@@ -417,6 +463,7 @@
   (-main "--edges-cut-off" "3")
   (-main "--edges" "false")
   (-main "--edges" "false" "--sensitivity" "99.725")
+  (-main "-h")
   .)
 
 ;;
