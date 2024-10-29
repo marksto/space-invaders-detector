@@ -247,7 +247,7 @@
 ;;
 
 (defexpect find-invaders:only-full-matches-test
-  (expecting "Full matches at 99.8% sensitivity — Squid & Crab (task test data)"
+  (expecting "FULL matches at 99.8% sensitivity — Squid & Crab (task test data)"
     (expect (more->
               #{:invader.type/squid :invader.type/crab} (-> keys set)
 
@@ -338,7 +338,7 @@
 
             (sut/find-invaders sut/invaders sut/radar-sample)))
 
-  (expecting "Full matches at 99.7% sensitivity — Squid & Crab (task test data)"
+  (expecting "FULL matches at 99.7% sensitivity — Squid & Crab (task test data)"
     (expect (more->
               #{:invader.type/squid :invader.type/crab} (-> keys set)
 
@@ -483,6 +483,122 @@
               :invader.type/crab)
 
             (sut/find-invaders sut/invaders sut/radar-sample {:sensitivity 99.7}))))
+
+(defexpect find-invaders:all-matches-test
+  (expecting "ALL matches at 99.8% sensitivity — Squid & Crab (task test data)"
+    (expect (more->
+              #{:invader.type/squid :invader.type/crab} (-> keys set)
+
+              (more-of [s1 s2 s3 s4 s5 s6 :as squids]
+                       (expect 6 (count squids))
+                       (expect (more-> [42 0] :match/location
+                                       (≈ 99.88) :match/accuracy
+                                       (char-seqs ["---oo---"
+                                                   "--ooo-o-"
+                                                   "--ooooo-"
+                                                   "oo--o-oo"
+                                                   "oo-ooooo"
+                                                   "-----o--"
+                                                   "oo-oo-o-"
+                                                   "o-o--ooo"]) :match/char-seqs)
+                               s1)
+                       (expect (more-> [35 15] :match/location
+                                       (≈ 99.84) :match/accuracy
+                                       (char-seqs ["---oo---"
+                                                   "--oooo--"
+                                                   "oooooooo"
+                                                   "oo-oo--o"
+                                                   "-ooooooo"
+                                                   "--o--ooo"
+                                                   "-o-oo---"
+                                                   "oo--oo-o"]) :match/char-seqs)
+                               s2)
+                       (expect (more-> [16 28] :match/location
+                                       (≈ 99.86) :match/accuracy
+                                       (char-seqs ["---o-o--"
+                                                   "-ooooo--"
+                                                   "-oooooo-"
+                                                   "o--oo-oo"
+                                                   "oooooooo"
+                                                   "-ooo-o--"
+                                                   "--ooo-o-"
+                                                   "o-o--ooo"]) :match/char-seqs)
+                               s3)
+                       (expect (more-> [82 41] :match/location
+                                       (≈ 99.86) :match/accuracy
+                                       (char-seqs ["---oo---"
+                                                   "--ooooo-"
+                                                   "-oo-ooo-"
+                                                   "oo-o-ooo"
+                                                   "o-oooooo"
+                                                   "--o--o--"
+                                                   "oo-oo-o-"
+                                                   "--oooo-o"]) :match/char-seqs)
+                               s4)
+                       (expect (more-> [18 0] :match/location
+                                       (≈ 99.80) :match/accuracy
+                                       true :match/partial?
+                                       :top :match/edge-kind
+                                       (char-seqs ["o--ooo--"
+                                                   "-oooooo-"
+                                                   "oo-oo-oo"
+                                                   "o-oo-o--"
+                                                   "o----o--"
+                                                   "ooooo-o-"
+                                                   "o-o--o--"]) :match/char-seqs)
+                               s5)
+                       (expect (more-> [17 45] :match/location
+                                       (≈ 99.93) :match/accuracy
+                                       true :match/partial?
+                                       :bottom :match/edge-kind
+                                       (char-seqs ["---ooo--"
+                                                   "o-oooo--"
+                                                   "-oooooo-"
+                                                   "oo--o-oo"
+                                                   "oooooooo"]) :match/char-seqs)
+                               s6))
+              :invader.type/squid
+
+              (more-of [c1 c2 c3 :as crabs]
+                       (expect 3 (count crabs))
+                       (expect (more-> [74 1] :match/location
+                                       (≈ 99.88) :match/accuracy
+                                       (char-seqs ["ooo-----o--"
+                                                   "o--o-o-o---"
+                                                   "--o-ooooo--"
+                                                   "oo--ooo-oo-"
+                                                   "ooooooo-ooo"
+                                                   "oooo--ooo-o"
+                                                   "o-o-----o-o"
+                                                   "---oo-oo---"]) :match/char-seqs)
+                               c1)
+                       (expect (more-> [85 12] :match/location
+                                       (≈ 99.86) :match/accuracy
+                                       (char-seqs ["--oo----o--"
+                                                   "-------o---"
+                                                   "o--oooooo--"
+                                                   "-oo--oo--o-"
+                                                   "oo-oooooooo"
+                                                   "o-ooooooo-o"
+                                                   "oo-o----o-o"
+                                                   "--ooo-oo--o"]) :match/char-seqs)
+                               c2)
+                       (expect (more-> [60 13] :match/location
+                                       (≈ 99.91) :match/accuracy
+                                       (char-seqs ["--o-----o--"
+                                                   "-------o---"
+                                                   "--oooo-oo--"
+                                                   "----ooo-oo-"
+                                                   "o--oooooo-o"
+                                                   "o-o-ooooo-o"
+                                                   "o-o-----o-o"
+                                                   "---oo-oo---"]) :match/char-seqs)
+                               c3))
+              :invader.type/crab)
+
+            (sut/find-invaders sut/invaders sut/radar-sample
+                               {:edges         true
+                                :edges-cut-off 3}))))
 
 ;;
 
