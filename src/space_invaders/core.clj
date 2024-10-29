@@ -437,7 +437,16 @@
              "                If not specified, an example sample is used."
              ""
              "OPTIONS"
-             options-summary]))
+             options-summary
+             ""
+             "EXAMPLES"
+             "  clojure -M:run"
+             "  clojure -M:run path/to/radar_sample.txt"
+             "  clojure -M:run -i path/to/invader_1.txt -i path/to/invader_2.txt"
+             "  clojure -M:run --edges false path/to/radar_sample.txt"
+             "  clojure -M:run --edges false --sensitivity 99.7 path/to/radar_sample.txt"
+             "  clojure -M:run --edges-cut-off 2 path/to/radar_sample.txt"
+             ]))
 
 (defn args-error-msg [errors]
   (style (str "The following errors occurred while parsing your command:\n"
@@ -464,8 +473,10 @@
 
 (defn- exit
   [{:keys [status-code output-msg]}]
-  (when output-msg (println output-msg))
-  (System/exit status-code))
+  (when output-msg
+    (println output-msg))
+  (when-not *repl*
+    (System/exit status-code)))
 
 (defn -main [& args]
   (let [{:keys [do-exit radar-sample-path options]} (validate-args args)]
