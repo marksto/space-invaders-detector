@@ -44,71 +44,80 @@
 
 ;;
 
-(defexpect find-invader-test
+(defexpect find-invader:exact-match-test
   (expecting "An exact match is found with 100% accuracy — Squid"
     (let [squid-invader-pattern (sut/read-text-file "invaders/squid.txt")]
-      (expect (more-of [m1 :as matches]
-                       (expect 1 (count matches))
-                       (expect (more-> [0 0] :match/location
-                                       0 :match/distance
-                                       100.0 :match/accuracy
-                                       (char-seqs ["---oo---"
-                                                   "--oooo--"
-                                                   "-oooooo-"
-                                                   "oo-oo-oo"
-                                                   "oooooooo"
-                                                   "--o--o--"
-                                                   "-o-oo-o-"
-                                                   "o-o--o-o"]) :match/char-seqs)
-                               m1))
-              (sut/find-invader {:invader/type    :invader.type/squid
-                                 :invader/pattern squid-invader-pattern}
-                                squid-invader-pattern
-                                {}))))
+      (expect (more->
+                #{:invader.type/squid} (-> keys set)
+                (more-of [m1 :as matches]
+                         (expect 1 (count matches))
+                         (expect (more-> [0 0] :match/location
+                                         0 :match/distance
+                                         100.0 :match/accuracy
+                                         (char-seqs ["---oo---"
+                                                     "--oooo--"
+                                                     "-oooooo-"
+                                                     "oo-oo-oo"
+                                                     "oooooooo"
+                                                     "--o--o--"
+                                                     "-o-oo-o-"
+                                                     "o-o--o-o"]) :match/char-seqs)
+                                 m1))
+                :invader.type/squid)
+              (sut/find-invaders [{:invader/type    :invader.type/squid
+                                   :invader/pattern squid-invader-pattern}]
+                                 squid-invader-pattern
+                                 {}))))
   (expecting "An exact match is found with 100% accuracy — Crab"
     (let [crab-invader-pattern (sut/read-text-file "invaders/crab.txt")]
-      (expect (more-of [m1 :as matches]
-                       (expect 1 (count matches))
-                       (expect (more-> [0 0] :match/location
-                                       0 :match/distance
-                                       100.0 :match/accuracy
-                                       (char-seqs ["--o-----o--"
-                                                   "---o---o---"
-                                                   "--ooooooo--"
-                                                   "-oo-ooo-oo-"
-                                                   "ooooooooooo"
-                                                   "o-ooooooo-o"
-                                                   "o-o-----o-o"
-                                                   "---oo-oo---"]) :match/char-seqs)
-                               m1))
-              (sut/find-invader {:invader/type    :invader.type/crab
-                                 :invader/pattern crab-invader-pattern}
-                                crab-invader-pattern
-                                {}))))
+      (expect (more->
+                #{:invader.type/crab} (-> keys set)
+                (more-of [m1 :as matches]
+                         (expect 1 (count matches))
+                         (expect (more-> [0 0] :match/location
+                                         0 :match/distance
+                                         100.0 :match/accuracy
+                                         (char-seqs ["--o-----o--"
+                                                     "---o---o---"
+                                                     "--ooooooo--"
+                                                     "-oo-ooo-oo-"
+                                                     "ooooooooooo"
+                                                     "o-ooooooo-o"
+                                                     "o-o-----o-o"
+                                                     "---oo-oo---"]) :match/char-seqs)
+                                 m1))
+                :invader.type/crab)
+              (sut/find-invaders [{:invader/type    :invader.type/crab
+                                   :invader/pattern crab-invader-pattern}]
+                                 crab-invader-pattern
+                                 {}))))
   (expecting "An exact match is found with 100% accuracy — UFO"
-    (let [crab-invader-pattern (sut/read-text-file "invaders/ufo.txt")]
-      (expect (more-of [m1 :as matches]
-                       (expect 1 (count matches))
-                       (expect (more-> [0 0] :match/location
-                                       0 :match/distance
-                                       100.0 :match/accuracy
-                                       (char-seqs ["-----oooooo-----"
-                                                   "---oooooooooo---"
-                                                   "--oooooooooooo--"
-                                                   "-oo-oo-oo-oo-oo-"
-                                                   "oooooooooooooooo"
-                                                   "--ooo--oo--ooo--"
-                                                   "---o--------o---"]) :match/char-seqs)
-                               m1))
-              (sut/find-invader {:invader/type    :invader.type/crab
-                                 :invader/pattern crab-invader-pattern}
-                                crab-invader-pattern
-                                {})))))
+    (let [ufo-invader-pattern (sut/read-text-file "invaders/ufo.txt")]
+      (expect (more->
+                #{:invader.type/ufo} (-> keys set)
+                (more-of [m1 :as matches]
+                         (expect 1 (count matches))
+                         (expect (more-> [0 0] :match/location
+                                         0 :match/distance
+                                         100.0 :match/accuracy
+                                         (char-seqs ["-----oooooo-----"
+                                                     "---oooooooooo---"
+                                                     "--oooooooooooo--"
+                                                     "-oo-oo-oo-oo-oo-"
+                                                     "oooooooooooooooo"
+                                                     "--ooo--oo--ooo--"
+                                                     "---o--------o---"]) :match/char-seqs)
+                                 m1))
+                :invader.type/ufo)
+              (sut/find-invaders [{:invader/type    :invader.type/ufo
+                                   :invader/pattern ufo-invader-pattern}]
+                                 ufo-invader-pattern
+                                 {})))))
 
 ;;
 
-(defexpect find-invaders-test
-  (expecting "Happy path works at 99.8% sensitivity — task test data"
+(defexpect find-invaders:full-matches-test
+  (expecting "Full matches at 99.8% sensitivity — Squid & Crab (task test data)"
     (expect (more->
               #{:invader.type/squid :invader.type/crab} (-> keys set)
 
@@ -199,7 +208,7 @@
 
             (sut/find-invaders sut/invaders sut/radar-sample)))
 
-  (expecting "Happy path works at 99.7% sensitivity — task test data"
+  (expecting "Full matches at 99.7% sensitivity — Squid & Crab (task test data)"
     (expect (more->
               #{:invader.type/squid :invader.type/crab} (-> keys set)
 

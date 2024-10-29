@@ -238,7 +238,7 @@
           (true? edges) (assoc :search-on-edges true)
           (some? edges-cut-off) (assoc :min-sub-pattern edges-cut-off)))
 
-(defn find-invader
+(defn- find-invader
   [{:invader/keys [pattern] :as _invader} radar-sample opts]
   (if-some [{:error/keys [msg data]} (validate-pattern-str pattern)]
     (do (println (style msg :red))
