@@ -22,7 +22,7 @@
 
 (defexpect validate-pattern-str-test
   (expecting "Example data patterns are valid"
-    (doseq [valid-pattern (map :invader/pattern (sut/built-invaders))]
+    (doseq [valid-pattern (map :invader/pattern (sut/build-invaders))]
       (expect nil? (sut/validate-pattern-str valid-pattern))))
   (expecting "Pattern must contain only valid characters"
     (expect {:error/msg "Pattern must contain only valid characters"}
@@ -48,7 +48,7 @@
                                "---oo-oo---"]))))))
 
 (defexpect validate-input-str-test
-  (let [max-invader-dims (sut/max-invader-dims (sut/built-invaders))]
+  (let [max-invader-dims (sut/max-invader-dims (sut/build-invaders))]
     (expecting "Example data input is valid"
       (expect nil? (sut/validate-input-str example-radar-sample
                                            max-invader-dims)))
@@ -83,7 +83,8 @@
 
 (defexpect find-invaders:single-exact-match-test
   (expecting "An exact match is found with 100% accuracy — Squid"
-    (let [squid-invader-pattern (sut/read-text-file "space_invaders/invaders/squid.txt")]
+    (let [[squid-invader] (sut/build-invaders ["space_invaders/invaders/squid.txt"])
+          squid-invader-pattern (:invader/pattern squid-invader)]
       (expect (more->
                 #{:squid} (-> keys set)
                 (more-of [m1 :as matches]
@@ -101,12 +102,10 @@
                                                      "o-o--o-o"]) :match/char-seqs)
                                  m1))
                 :squid)
-              (sut/find-invaders [{:invader/type    :squid
-                                   :invader/pattern squid-invader-pattern}]
-                                 squid-invader-pattern
-                                 {}))))
+              (sut/find-invaders [squid-invader] squid-invader-pattern))))
   (expecting "An exact match is found with 100% accuracy — Crab"
-    (let [crab-invader-pattern (sut/read-text-file "space_invaders/invaders/crab.txt")]
+    (let [[crab-invader] (sut/build-invaders ["space_invaders/invaders/crab.txt"])
+          crab-invader-pattern (:invader/pattern crab-invader)]
       (expect (more->
                 #{:crab} (-> keys set)
                 (more-of [m1 :as matches]
@@ -124,12 +123,10 @@
                                                      "---oo-oo---"]) :match/char-seqs)
                                  m1))
                 :crab)
-              (sut/find-invaders [{:invader/type    :crab
-                                   :invader/pattern crab-invader-pattern}]
-                                 crab-invader-pattern
-                                 {}))))
+              (sut/find-invaders [crab-invader] crab-invader-pattern))))
   (expecting "An exact match is found with 100% accuracy — UFO"
-    (let [ufo-invader-pattern (sut/read-text-file "space_invaders/invaders/ufo.txt")]
+    (let [[ufo-invader] (sut/build-invaders ["space_invaders/invaders/ufo.txt"])
+          ufo-invader-pattern (:invader/pattern ufo-invader)]
       (expect (more->
                 #{:ufo} (-> keys set)
                 (more-of [m1 :as matches]
@@ -146,15 +143,11 @@
                                                      "---o--------o---"]) :match/char-seqs)
                                  m1))
                 :ufo)
-              (sut/find-invaders [{:invader/type    :ufo
-                                   :invader/pattern ufo-invader-pattern}]
-                                 ufo-invader-pattern
-                                 {})))))
+              (sut/find-invaders [ufo-invader] ufo-invader-pattern)))))
 
 (defexpect find-invaders:single-matches-on-edges-test
   (expecting "Exact match on the TOP edge is found with 100% accuracy — Crab"
-    (let [crab-invader-pattern (sut/read-text-file "space_invaders/invaders/crab.txt")
-          radar-sample         (sut/read-text-file "space_invaders/radar_samples/crab-top-3.txt")]
+    (let [radar-sample (sut/read-text-file "space_invaders/radar_samples/crab-top-3.txt")]
       (expect (more->
                 #{:crab} (-> keys set)
                 (more-of [m1 :as matches]
@@ -169,14 +162,12 @@
                                                      "---oo-oo---"]) :match/char-seqs)
                                  m1))
                 :crab)
-              (sut/find-invaders [{:invader/type    :crab
-                                   :invader/pattern crab-invader-pattern}]
+              (sut/find-invaders (sut/build-invaders ["space_invaders/invaders/crab.txt"])
                                  radar-sample
                                  {:sensitivity 100.0
                                   :edges       true}))))
   (expecting "Exact match on the LEFT edge is found with 100% accuracy — Crab"
-    (let [crab-invader-pattern (sut/read-text-file "space_invaders/invaders/crab.txt")
-          radar-sample         (sut/read-text-file "space_invaders/radar_samples/crab-left-2.txt")]
+    (let [radar-sample (sut/read-text-file "space_invaders/radar_samples/crab-left-2.txt")]
       (expect (more->
                 #{:crab} (-> keys set)
                 (more-of [m1 :as matches]
@@ -196,14 +187,12 @@
                                                      "--"]) :match/char-seqs)
                                  m1))
                 :crab)
-              (sut/find-invaders [{:invader/type    :crab
-                                   :invader/pattern crab-invader-pattern}]
+              (sut/find-invaders (sut/build-invaders ["space_invaders/invaders/crab.txt"])
                                  radar-sample
                                  {:sensitivity 100.0
                                   :edges       true}))))
   (expecting "Exact match on the BOTTOM edge is found with 100% accuracy — Crab"
-    (let [crab-invader-pattern (sut/read-text-file "space_invaders/invaders/crab.txt")
-          radar-sample         (sut/read-text-file "space_invaders/radar_samples/crab-bottom-1.txt")]
+    (let [radar-sample (sut/read-text-file "space_invaders/radar_samples/crab-bottom-1.txt")]
       (expect (more->
                 #{:crab} (-> keys set)
                 (more-of [m1 :as matches]
@@ -216,14 +205,12 @@
                                          (char-seqs ["--o-----o--"]) :match/char-seqs)
                                  m1))
                 :crab)
-              (sut/find-invaders [{:invader/type    :crab
-                                   :invader/pattern crab-invader-pattern}]
+              (sut/find-invaders (sut/build-invaders ["space_invaders/invaders/crab.txt"])
                                  radar-sample
                                  {:sensitivity 100.0
                                   :edges       true}))))
   (expecting "Exact match on the RIGHT edge is found with 100% accuracy — Crab"
-    (let [crab-invader-pattern (sut/read-text-file "space_invaders/invaders/crab.txt")
-          radar-sample         (sut/read-text-file "space_invaders/radar_samples/crab-right-1.txt")]
+    (let [radar-sample (sut/read-text-file "space_invaders/radar_samples/crab-right-1.txt")]
       (expect (more->
                 #{:crab} (-> keys set)
                 (more-of [m1 :as matches]
@@ -243,8 +230,7 @@
                                                      "-"]) :match/char-seqs)
                                  m1))
                 :crab)
-              (sut/find-invaders [{:invader/type    :crab
-                                   :invader/pattern crab-invader-pattern}]
+              (sut/find-invaders (sut/build-invaders ["space_invaders/invaders/crab.txt"])
                                  radar-sample
                                  {:sensitivity 100.0
                                   :edges       true})))))
@@ -341,7 +327,7 @@
                                c3))
               :crab)
 
-            (sut/find-invaders (sut/built-invaders) example-radar-sample)))
+            (sut/find-invaders (sut/build-invaders) example-radar-sample)))
 
   (expecting "FULL matches at 99.7% sensitivity — Squid & Crab (example data)"
     (expect (more->
@@ -487,7 +473,7 @@
                                c4))
               :crab)
 
-            (sut/find-invaders (sut/built-invaders) example-radar-sample
+            (sut/find-invaders (sut/build-invaders) example-radar-sample
                                {:sensitivity 99.7}))))
 
 (defexpect find-invaders:all-matches-test
@@ -602,7 +588,7 @@
                                c3))
               :crab)
 
-            (sut/find-invaders (sut/built-invaders) example-radar-sample
+            (sut/find-invaders (sut/build-invaders) example-radar-sample
                                {:edges         true
                                 :edges-cut-off 3}))))
 

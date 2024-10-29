@@ -298,9 +298,9 @@
 
 (declare read-text-file)
 
-(defn built-invaders
+(defn build-invaders
   ([]
-   (built-invaders nil))
+   (build-invaders nil))
   ([invader-pattern-paths]
    (reduce (fn [res pattern-path]
              (let [filename        (fs/strip-ext (fs/file-name pattern-path))
@@ -484,7 +484,7 @@
       (exit do-exit)
       (try
         (let [radar-sample (read-text-file radar-sample-path)
-              invaders     (built-invaders (:invader options))
+              invaders     (build-invaders (:invader options))
               results      (find-invaders invaders radar-sample options)]
           (print-results results)
           (print-radar-sample-with-matches invaders radar-sample results)
