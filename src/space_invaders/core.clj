@@ -46,9 +46,20 @@
 
 ;; input strings
 
-;; TODO: Impl an input string preparation (lines padding, dims >= pattern dims).
-(defn prepare-input-str [input-str]
-  input-str)
+(defn validate-input-str
+  [input-str [min-width min-height :as min-dims]]
+  (let [input-lines (str/split-lines input-str)
+        [input-width input-height :as input-dims] (text-dimensions input-str)]
+    (cond
+      (not= 1 (count (set (map count input-lines))))
+      {:error/msg  "Input lines have to be of the same length"
+       :error/data {:input-lines input-lines}}
+      ;;
+      (or (< input-width min-width)
+          (< input-height min-height))
+      {:error/msg  "Input dimension must be equal to or bigger than the minimal"
+       :error/data {:input-dims input-dims
+                    :min-dims   min-dims}})))
 
 (defn ->input
   [input-str]
@@ -231,18 +242,27 @@
 
 ;; main logic (high-level)
 
+(declare print-error)
+
+(defn max-invader-dims
+  [invaders]
+  (reduce (fn [[max-width max-height] {:invader/keys [pattern]}]
+            (let [[pattern-width pattern-height] (text-dimensions pattern)]
+              [(max max-width pattern-width) (max max-height pattern-height)]))
+          [1 1]
+          invaders))
+
 (defn- prepare-search-opts
   [{:keys [sensitivity edges edges-cut-off] :as _opts}]
   (cond-> {}
           (some? sensitivity) (assoc :min-accuracy sensitivity)
           (true? edges) (assoc :search-on-edges true)
-          (some? edges-cut-off) (assoc :min-sub-pattern edges-cut-off)))
+          (some? edges-cut-off) (assoc :min-sub-pattern (max 1 edges-cut-off))))
 
 (defn- find-invader
   [{:invader/keys [pattern] :as _invader} radar-sample opts]
-  (if-some [{:error/keys [msg data]} (validate-pattern-str pattern)]
-    (do (println (style msg :red))
-        (println (style (with-out-str (pprint data)) :red))
+  (if-some [error (validate-pattern-str pattern)]
+    (do (print-error error)
         nil)
     (find-matches pattern radar-sample opts)))
 
@@ -253,15 +273,18 @@
   ([invaders radar-sample]
    (find-invaders invaders radar-sample nil))
   ([invaders radar-sample opts]
-   (let [radar-sample' (prepare-input-str radar-sample)
-         search-opts   (prepare-search-opts opts)]
-     (reduce (fn [res {invader-type :invader/type :as invader}]
-               (let [matches (find-invader invader radar-sample' search-opts)]
-                 (if (seq matches)
-                   (assoc res invader-type matches)
-                   res)))
-             {}
-             invaders))))
+   (let [max-invader-dims (max-invader-dims invaders)]
+     (if-some [error (validate-input-str radar-sample max-invader-dims)]
+       (do (print-error error)
+           nil)
+       (let [search-opts (prepare-search-opts opts)]
+         (reduce (fn [res {invader-type :invader/type :as invader}]
+                   (let [matches (find-invader invader radar-sample search-opts)]
+                     (if (seq matches)
+                       (assoc res invader-type matches)
+                       res)))
+                 {}
+                 invaders))))))
 
 ;; I/O and entrypoint
 
@@ -275,6 +298,13 @@
     :invader/pattern (read-text-file "invaders/crab.txt")}])
 
 (def radar-sample (read-text-file "radar_samples/sample-1.txt"))
+
+;;
+
+(defn print-error
+  [{:error/keys [msg data] :as _error}]
+  (println (style msg :red))
+  (println (style (with-out-str (pprint data)) :red)))
 
 (defn- ->output-match
   [{:match/keys [location char-seqs distance accuracy partial? edge-kind]
@@ -293,19 +323,18 @@
         #(- (:match/accuracy %))))
 
 (defn print-results [results]
-  (if-some [res-seq (seq results)]
-    (do (let [total-matches (reduce + 0 (map (comp count second) res-seq))]
-          (println (format "Found %s possible invader matches in total.\n"
-                           total-matches)))
-        (doseq [[invader-type matches] res-seq]
-          (println (format "Found %s possible '%s' invader matches:"
-                           (count matches) (name invader-type)))
-          (doseq [output-match (->> matches
-                                    (sort-by matches-comp)
-                                    (map ->output-match))]
-            (pprint output-match))
-          (println)))
-    (println "No invaders were found.")))
+  (when (some? results)
+    (let [total-matches (reduce + 0 (map (comp count second) results))]
+      (println (format "Found %s possible invader matches in total.\n"
+                       total-matches)))
+    (doseq [[invader-type matches] results]
+      (println (format "Found %s possible '%s' invader matches:"
+                       (count matches) (name invader-type)))
+      (doseq [output-match (->> matches
+                                (sort-by matches-comp)
+                                (map ->output-match))]
+        (pprint output-match))
+      (println))))
 
 (def invader-type->color
   (delay
@@ -344,15 +373,17 @@
 
 (defn print-radar-sample-with-matches
   [radar-sample results]
-  (println "Possible invaders on the radar sample:")
-  (let [[width height] (text-dimensions radar-sample)
-        char-seqs       (text-str->char-seqs radar-sample)
-        loc->match-char (build-loc->match-char results)]
-    (doseq [idy (range height)]
-      (println (apply str (map (fn [idx]
-                                 (or (get loc->match-char [idx idy])
-                                     (nth (nth char-seqs idy) idx)))
-                               (range width)))))))
+  (when (seq results)
+    (println "Possible invaders on the radar sample:")
+    (let [[width height] (text-dimensions radar-sample)
+          char-seqs       (text-str->char-seqs radar-sample)
+          loc->match-char (build-loc->match-char results)]
+      (doseq [idy (range height)]
+        (println (apply str (map (fn [idx]
+                                   (or (get loc->match-char [idx idy])
+                                       (nth (nth char-seqs idy) idx)))
+                                 (range width))))))
+    (println)))
 
 (def cli-options-spec
   [["-s" "--sensitivity SENSITIVITY"
@@ -372,7 +403,7 @@
     :validate [pos-int? "Must be a positive natural number."]]
    ["-h" "--help"]])
 
-;; TODO: Implement the '--help' CLI argument processing.
+;; TODO: Implement the '--help' CLI argument processing. Also, exit with `0`.
 (defn -main [& args]
   (let [opts    (:options (cli/parse-opts args cli-options-spec))
         results (find-invaders invaders radar-sample opts)]

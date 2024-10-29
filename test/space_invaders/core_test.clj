@@ -10,7 +10,7 @@
 (defn char-seqs [str-vec]
   (map seq str-vec))
 
-(defn ->pattern-str [str-vec]
+(defn ->text-str [str-vec]
   (str/join \newline str-vec))
 
 ;;
@@ -22,25 +22,57 @@
   (expecting "Pattern must contain only valid characters"
     (expect {:error/msg "Pattern must contain only valid characters"}
             (in (sut/validate-pattern-str
-                  (->pattern-str ["--o-----o--"
-                                  "---o---x---"
-                                  "--ooooooo--"
-                                  "-oo-ooo-oo-"
-                                  "ooooooooooo"
-                                  "o-ooooooo-o"
-                                  "o-o-----o-o"
-                                  "---oo-oo---"])))))
+                  (->text-str ["--o-----o--"
+                               "---o---x---"
+                               "--ooooooo--"
+                               "-oo-ooo-oo-"
+                               "ooooooooooo"
+                               "o-ooooooo-o"
+                               "o-o-----o-o"
+                               "---oo-oo---"])))))
   (expecting "Pattern lines have to be of the same length"
     (expect {:error/msg "Pattern lines have to be of the same length"}
             (in (sut/validate-pattern-str
-                  (->pattern-str ["--o-----o--"
-                                  "---o---o-"
-                                  "--ooooooo--"
-                                  "-oo-ooo-oo-"
-                                  "ooooooooooo"
-                                  "o-ooooooo-o"
-                                  "o-o-----o-o"
-                                  "---oo-oo---"]))))))
+                  (->text-str ["--o-----o--"
+                               "---o---o-"
+                               "--ooooooo--"
+                               "-oo-ooo-oo-"
+                               "ooooooooooo"
+                               "o-ooooooo-o"
+                               "o-o-----o-o"
+                               "---oo-oo---"]))))))
+
+(defexpect validate-input-str-test
+  (let [max-invader-dims (sut/max-invader-dims sut/invaders)]
+    (expecting "Task test data input is valid"
+      (expect nil? (sut/validate-input-str sut/radar-sample
+                                           max-invader-dims)))
+    (expecting "Pattern must contain only valid characters"
+      (expect {:error/msg "Input lines have to be of the same length"}
+              (in (sut/validate-input-str
+                    (->text-str ["--------"
+                                 "-------"
+                                 "--------"
+                                 "--------"
+                                 "------"
+                                 "--------"
+                                 "--------"
+                                 "--------"])
+                    max-invader-dims))))
+    (expecting "Input dimension must be equal to or bigger than the minimal"
+      (expect {:error/msg  "Input dimension must be equal to or bigger than the minimal"
+               :error/data {:input-dims [8 8]
+                            :min-dims   max-invader-dims}}
+              (in (sut/validate-input-str
+                    (->text-str ["--------"
+                                 "--------"
+                                 "--------"
+                                 "--------"
+                                 "--------"
+                                 "--------"
+                                 "--------"
+                                 "--------"])
+                    max-invader-dims))))))
 
 ;;
 
