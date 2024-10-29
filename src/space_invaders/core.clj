@@ -74,10 +74,9 @@
         accuracy (- 100.0 (/ distance (count p-char-seq)))]
     (when (<= min-accuracy accuracy)
       (cond-> {:match/location  i-loc
-               :match/dimension p-dims
-               :match/char-seq  i-subseq
                :match/distance  distance
-               :match/accuracy  accuracy}
+               :match/accuracy  accuracy
+               :match/char-seqs (partition (first p-dims) i-subseq)}
               (true? partial-match?) (assoc :match/partial? true)
               (some? edge-kind) (assoc :match/edge-kind edge-kind)))))
 
@@ -278,24 +277,20 @@
 (def radar-sample (read-text-file "radar_samples/sample-1.txt"))
 
 (defn- ->output-match
-  [{:match/keys [location dimension char-seq distance accuracy partial? edge-kind]
+  [{:match/keys [location char-seqs distance accuracy partial? edge-kind]
     :as         _match}]
   (cond-> {:location location
            #_#_:distance distance ; for debug purposes
            :accuracy (format "%.2f%%" accuracy)
-           :matching (->> char-seq
-                          (partition (first dimension))
-                          (interpose \newline)
-                          (flatten)
-                          (apply str))}
+           :matching (mapv str/join char-seqs)}
           (true? partial?) (assoc :partial? true)
           (some? edge-kind) (assoc :edge-kind edge-kind)))
 
 (def matches-comp
-  "Compares matches first by their `char-seq` length (the bigger the better),
-   and then by `accuracy` of the match (again, the bigger the better)."
-  (juxt (comp - count :match/char-seq)
-        (comp - :match/accuracy)))
+  "Compares matches first by their line length (the bigger the better),
+   and then, by `accuracy` of the match (again, the bigger the better)."
+  (juxt #(- (count (first (:match/char-seqs %))))
+        #(- (:match/accuracy %))))
 
 (defn print-results [results]
   (if-some [res-seq (seq results)]
@@ -322,11 +317,10 @@
                                   (loop [acc acc, [match & m-rest] matches]
                                     (if (some? match)
                                       (recur
-                                        (let [{:match/keys [dimension char-seq]
-                                               [mx my]     :match/location} match
-                                              idy+m-lines (->> char-seq
-                                                               (partition (first dimension))
-                                                               (map-indexed (fn [idy m-line] [idy m-line])))]
+                                        (let [{char-seqs :match/char-seqs
+                                               [mx my]   :match/location} match
+                                              idy+m-lines (map-indexed (fn [idy m-line] [idy m-line])
+                                                                       char-seqs)]
                                           (reduce (fn [acc [idy m-line]]
                                                     (reduce (fn [acc idx]
                                                               (assoc-in acc [(+ mx idx) (+ my idy)]
