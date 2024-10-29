@@ -68,7 +68,7 @@
   [p-char-seq p-dims
    i-char-seqs i-loc
    min-accuracy
-   partial-match?]
+   & [partial-match? edge-kind]]
   (let [i-subseq (extract-char-subseq i-char-seqs i-loc p-dims)
         distance (calc-distance p-char-seq i-subseq)
         accuracy (- 100.0 (/ distance (count p-char-seq)))]
@@ -78,7 +78,8 @@
                :match/char-seq  i-subseq
                :match/distance  distance
                :match/accuracy  accuracy}
-              (true? partial-match?) (assoc :match/partial? true)))))
+              (true? partial-match?) (assoc :match/partial? true)
+              (some? edge-kind) (assoc :match/edge-kind edge-kind)))))
 
 (defmulti edge-base-locs
   (fn [edge-kind _pattern _input]
@@ -127,7 +128,7 @@
 (defmethod edge-shifts :left
   [_ {[p-width p-height] :pattern/dims :as _pattern} min-sub-pattern]
   (->> (inc (- p-width min-sub-pattern))
-       (range 1 p-width)
+       (range 1)
        (map (fn [x-shift]
               {:shift/pattern-loc  [x-shift 0]
                :shift/pattern-dims [(- p-width x-shift) p-height]}))))
@@ -173,7 +174,7 @@
                                   (when-some [match (->pattern-match
                                                       p-char-subseq p-dims
                                                       i-char-seqs shifted-i-loc
-                                                      min-accuracy true)]
+                                                      min-accuracy true edge-kind)]
                                     (reduced match))))
                               nil
                               edge-shifts)]
@@ -202,7 +203,7 @@
           idx (range (inc (- i-width p-width)))
           :let [match (->pattern-match p-char-seq p-dims
                                        i-char-seqs [idx idy]
-                                       min-accuracy false)]
+                                       min-accuracy)]
           :when (some? match)]
       match)))
 
@@ -277,7 +278,7 @@
 (def radar-sample (read-text-file "radar_samples/sample-1.txt"))
 
 (defn- ->output-match
-  [{:match/keys [location dimension char-seq distance accuracy partial?]
+  [{:match/keys [location dimension char-seq distance accuracy partial? edge-kind]
     :as         _match}]
   (cond-> {:location location
            #_#_:distance distance ; for debug purposes
@@ -287,7 +288,8 @@
                           (interpose \newline)
                           (flatten)
                           (apply str))}
-          (true? partial?) (assoc :partial? true)))
+          (true? partial?) (assoc :partial? true)
+          (some? edge-kind) (assoc :edge-kind edge-kind)))
 
 (def matches-comp
   "Compares matches first by their `char-seq` length (the bigger the better),
