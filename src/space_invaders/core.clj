@@ -317,9 +317,9 @@
           (some? edge-kind) (assoc :edge-kind edge-kind)))
 
 (def matches-comp
-  "Compares matches first by their line length (the bigger the better),
-   and then, by `accuracy` of the match (again, the bigger the better)."
-  (juxt #(- (count (first (:match/char-seqs %))))
+  "Compares matches first by the total length (the bigger the better)
+   and then by `accuracy` of the match (again, the bigger the better)."
+  (juxt #(- (reduce + (map count (:match/char-seqs %))))
         #(- (:match/accuracy %))))
 
 (defn print-results [results]
