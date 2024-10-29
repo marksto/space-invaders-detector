@@ -426,16 +426,16 @@
 
   (quick-bench (find-invaders invaders radar-sample))
   ;;Evaluation count : 36 in 6 samples of 6 calls.
-  ;;           Execution time mean : 21,216211 ms
-  ;;  Execution time std-deviation : 3,674049 ms
-  ;; Execution time lower quantile : 18,901281 ms ( 2,5%)
-  ;; Execution time upper quantile : 27,425971 ms (97,5%)
-  ;;                 Overhead used : 8,200265 ns
+  ;;           Execution time mean : 22,030480 ms
+  ;;  Execution time std-deviation : 3,460200 ms
+  ;; Execution time lower quantile : 19,739008 ms ( 2,5%)
+  ;; Execution time upper quantile : 27,528698 ms (97,5%)
+  ;;                 Overhead used : 8,305613 ns
   (bench (find-invaders invaders radar-sample))
-  ;;Evaluation count : 3240 in 60 samples of 54 calls.
-  ;;           Execution time mean : 18,749845 ms
-  ;;  Execution time std-deviation : 421,709128 µs
-  ;; Execution time lower quantile : 18,348777 ms ( 2,5%)
-  ;; Execution time upper quantile : 19,815350 ms (97,5%)
-  ;;                 Overhead used : 8,200265 ns
+  ;;Evaluation count : 3060 in 60 samples of 51 calls.
+  ;;           Execution time mean : 20,032871 ms
+  ;;  Execution time std-deviation : 527,714636 µs
+  ;; Execution time lower quantile : 19,607813 ms ( 2,5%)
+  ;; Execution time upper quantile : 21,538275 ms (97,5%)
+  ;;                 Overhead used : 8,222227 ns
   .)
