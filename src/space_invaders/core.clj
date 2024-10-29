@@ -294,48 +294,63 @@
 
 (defn print-results [results]
   (if-some [res-seq (seq results)]
-    (doseq [[invader-type matches] res-seq]
-      (println (format "Found %s possible '%s' invader matches:"
-                       (count matches) (name invader-type)))
-      (doseq [output-match (->> matches
-                                (sort-by matches-comp)
-                                (map ->output-match))]
-        (pprint output-match))
-      (println))
+    (do (let [total-matches (reduce + 0 (map (comp count second) res-seq))]
+          (println (format "Found %s possible invader matches in total.\n"
+                           total-matches)))
+        (doseq [[invader-type matches] res-seq]
+          (println (format "Found %s possible '%s' invader matches:"
+                           (count matches) (name invader-type)))
+          (doseq [output-match (->> matches
+                                    (sort-by matches-comp)
+                                    (map ->output-match))]
+            (pprint output-match))
+          (println)))
     (println "No invaders were found.")))
 
+(def invader-type->color
+  (delay
+    (let [predefined-colors [:red :green :blue :yellow :magenta :cyan]
+          invader-types     (distinct (map :invader/type invaders))]
+      (when (< (count predefined-colors)
+               (count invader-types))
+        (println
+          (style "Not enough predefined colors for all invader types" :yellow)))
+      (zipmap invader-types (concat predefined-colors (repeat :black))))))
+
+(defn- build-loc->match-char
+  [results]
+  (reduce-kv
+    (fn [acc invader-type matches]
+      (let [color (get @invader-type->color invader-type)]
+        (loop [acc acc, matches matches]
+          (if (seq matches)
+            (recur
+              (let [{char-seqs :match/char-seqs
+                     [mx my]   :match/location} (first matches)
+                    idy+m-lines (map-indexed (fn [idy m-line] [idy m-line])
+                                             char-seqs)]
+                (reduce (fn [acc [idy m-line]]
+                          (reduce (fn [acc idx]
+                                    (assoc acc [(+ mx idx) (+ my idy)]
+                                           (style (nth m-line idx) color)))
+                                  acc
+                                  (range (count m-line))))
+                        acc
+                        idy+m-lines))
+              (rest matches))
+            acc))))
+    {}
+    results))
+
 (defn print-radar-sample-with-matches
-  [invaders radar-sample results]
+  [radar-sample results]
+  (println "Possible invaders on the radar sample:")
   (let [[width height] (text-dimensions radar-sample)
-        char-seqs           (text-str->char-seqs radar-sample)
-        invader-type->color (->> [:red :green :blue :yellow :magenta :cyan]
-                                 (interleave (map :invader/type invaders))
-                                 (apply assoc {}))
-        x->y->match-char    (reduce-kv
-                              (fn [acc invader-type matches]
-                                (let [color (get invader-type->color invader-type)]
-                                  (loop [acc acc, [match & m-rest] matches]
-                                    (if (some? match)
-                                      (recur
-                                        (let [{char-seqs :match/char-seqs
-                                               [mx my]   :match/location} match
-                                              idy+m-lines (map-indexed (fn [idy m-line] [idy m-line])
-                                                                       char-seqs)]
-                                          (reduce (fn [acc [idy m-line]]
-                                                    (reduce (fn [acc idx]
-                                                              (assoc-in acc [(+ mx idx) (+ my idy)]
-                                                                        (style (nth m-line idx) color)))
-                                                            acc
-                                                            (range (count m-line))))
-                                                  acc
-                                                  idy+m-lines))
-                                        m-rest)
-                                      acc))))
-                              {}
-                              results)]
+        char-seqs       (text-str->char-seqs radar-sample)
+        loc->match-char (build-loc->match-char results)]
     (doseq [idy (range height)]
       (println (apply str (map (fn [idx]
-                                 (or (get-in x->y->match-char [idx idy])
+                                 (or (get loc->match-char [idx idy])
                                      (nth (nth char-seqs idy) idx)))
                                (range width)))))))
 
@@ -362,7 +377,7 @@
   (let [opts    (:options (cli/parse-opts args cli-options-spec))
         results (find-invaders invaders radar-sample opts)]
     (print-results results)
-    (print-radar-sample-with-matches invaders radar-sample results)
+    (print-radar-sample-with-matches radar-sample results)
     nil))
 
 (comment
