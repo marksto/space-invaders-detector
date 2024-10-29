@@ -76,7 +76,7 @@
 
 ;;
 
-(defexpect find-invader:exact-match-test
+(defexpect find-invaders:single-exact-match-test
   (expecting "An exact match is found with 100% accuracy — Squid"
     (let [squid-invader-pattern (sut/read-text-file "invaders/squid.txt")]
       (expect (more->
@@ -146,7 +146,7 @@
                                  ufo-invader-pattern
                                  {})))))
 
-(defexpect find-invader:matches-on-edges-test
+(defexpect find-invaders:single-matches-on-edges-test
   (expecting "Exact match on the TOP edge is found with 100% accuracy — Crab"
     (let [crab-invader-pattern (sut/read-text-file "invaders/crab.txt")
           radar-sample         (sut/read-text-file "radar_samples/crab-top-3.txt")]
@@ -246,7 +246,7 @@
 
 ;;
 
-(defexpect find-invaders:full-matches-test
+(defexpect find-invaders:only-full-matches-test
   (expecting "Full matches at 99.8% sensitivity — Squid & Crab (task test data)"
     (expect (more->
               #{:invader.type/squid :invader.type/crab} (-> keys set)
