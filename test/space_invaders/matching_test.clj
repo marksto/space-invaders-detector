@@ -1,13 +1,9 @@
 (ns space-invaders.matching-test
   (:require [expectations.clojure.test
-             :refer [approximately defexpect expect expecting more-of more->]]
+             :refer [defexpect expect expecting more-of more->]]
             [space-invaders.matching :as sut]
-            [space-invaders.text :as t]))
-
-(defn ≈ [^double v]
-  (approximately v 0.01))
-
-;;
+            [space-invaders.text :as t]
+            [space-invaders.test-utils :refer [≈]]))
 
 (defexpect validate-pattern-str-test
   (expecting "Valid pattern is returned as is"
