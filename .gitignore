@@ -36,5 +36,8 @@
 # clj-kondo
 .clj-kondo/.cache
 
+# Eastwood
+.eastwood
+
 # Calva VS Code Extension
 .calva/output-window/output.calva-repl

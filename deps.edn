@@ -19,7 +19,7 @@
                                                        :git/sha "dfb30dd"}
                  pjstadig/humane-test-output          {:mvn/version "0.11.0"}}}
 
-  ;; Run with "clojure -M:run --help"
+  ;; Run with "clojure -M:run --help" and follow along
   :run
   {:main-opts ["-m" "space-invaders.cli"]}
 
@@ -28,5 +28,12 @@
   {:extra-deps {jonase/kibit {:mvn/version "0.1.11"}}
    :exec-fn    kibit.driver/exec
    :exec-args  {:paths ["src" #_"test"]}}
+
+  ;; Run with "clojure -M:test:eastwood"
+  :eastwood
+  {:main-opts  ["-m" "eastwood.lint"
+                ;; Any Eastwood options can be passed here as edn:
+                {}]
+   :extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}}
   }
  }

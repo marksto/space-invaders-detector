@@ -97,13 +97,13 @@
    ["-s" "--sensitivity SENSITIVITY"
     "Search sensitivity in percent in range 0 (exclusive) — 100 (inclusive)."
     :default 80.0
-    :parse-fn Float/parseFloat
+    :parse-fn #(Float/parseFloat %)
     :validate [#(and (float? %) (pos? %) (<= % 100))
                "Must be a floating point number in the range (0 .. 100]."]]
    ["-e" "--edges ON"
     "Turns off/on the search along edges of the input string (radar sample)."
     :default true
-    :parse-fn Boolean/parseBoolean]
+    :parse-fn #(Boolean/parseBoolean %)]
    [nil "--edges-cut-off LINES"
     "Sets a cut-off (minimum number of lines) for searching along the edges."
     :default 1
