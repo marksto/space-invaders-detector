@@ -38,7 +38,7 @@
         (pprint output-match))
       (println))))
 
-(defn invader-type->color [invaders]
+(defn- invader-type->color [invaders]
   (let [predefined-colors [:red :green :blue :yellow :magenta :cyan]
         invader-types     (distinct (map :invader/type invaders))]
     (when (< (count predefined-colors)
@@ -135,7 +135,7 @@
              "  clojure -M:run --edges-cut-off 2 path/to/radar_sample.txt"
              ]))
 
-(defn args-error-msg [errors]
+(defn- args-error-msg [errors]
   (style (str "The following errors occurred while parsing your command:\n"
               (str/join \newline errors))
          :red))

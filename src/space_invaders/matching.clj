@@ -55,13 +55,13 @@
 
 ;; pattern matching
 
-(defn calc-distance
+(defn- calc-distance
   [char-seq-1 char-seq-2]
   (assert (= (count char-seq-1) (count char-seq-2))
           "The Hamming distance is only defined for seqs of the same length")
   (fuzzy-metrics/hamming char-seq-1 char-seq-2))
 
-(defn ->pattern-match
+(defn- ->pattern-match
   ([p-char-seq p-dims i-char-seqs i-loc min-accuracy]
    (->pattern-match p-char-seq p-dims i-char-seqs i-loc min-accuracy nil))
   ([p-char-seq p-dims i-char-seqs i-loc min-accuracy edge-kind]
