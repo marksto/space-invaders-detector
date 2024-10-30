@@ -19,7 +19,14 @@
                                                        :git/sha "dfb30dd"}
                  pjstadig/humane-test-output          {:mvn/version "0.11.0"}}}
 
+  ;; Run with "clojure -M:run --help"
   :run
   {:main-opts ["-m" "space-invaders.cli"]}
+
+  ;; Run with "clojure -X:kibit"
+  :kibit
+  {:extra-deps {jonase/kibit {:mvn/version "0.1.11"}}
+   :exec-fn    kibit.driver/exec
+   :exec-args  {:paths ["src" #_"test"]}}
   }
  }

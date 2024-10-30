@@ -81,10 +81,10 @@
           invader-type->color (invader-type->color invaders)
           loc->match-char     (build-loc->match-char results invader-type->color)]
       (doseq [idy (range height)]
-        (println (apply str (map (fn [idx]
-                                   (or (get loc->match-char [idx idy])
-                                       (nth (nth char-seqs idy) idx)))
-                                 (range width))))))
+        (println (str/join (map (fn [idx]
+                                  (or (get loc->match-char [idx idy])
+                                      (nth (nth char-seqs idy) idx)))
+                                (range width))))))
     (println)))
 
 (def cli-options-spec
@@ -98,7 +98,7 @@
     "Search sensitivity in percent in range 0 (exclusive) — 100 (inclusive)."
     :default 80.0
     :parse-fn Float/parseFloat
-    :validate [#(and (float? %) (< 0 %) (<= % 100))
+    :validate [#(and (float? %) (pos? %) (<= % 100))
                "Must be a floating point number in the range (0 .. 100]."]]
    ["-e" "--edges ON"
     "Turns off/on the search along edges of the input string (radar sample)."
