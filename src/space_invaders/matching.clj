@@ -62,20 +62,18 @@
   (fuzzy-metrics/hamming char-seq-1 char-seq-2))
 
 (defn ->pattern-match
-  [p-char-seq p-dims
-   i-char-seqs i-loc
-   min-accuracy
-   & [partial-match? edge-kind]]
+  ([p-char-seq p-dims i-char-seqs i-loc min-accuracy]
+   (->pattern-match p-char-seq p-dims i-char-seqs i-loc min-accuracy nil))
+  ([p-char-seq p-dims i-char-seqs i-loc min-accuracy edge-kind]
    (let [i-subseq (t/extract-char-subseq i-char-seqs i-loc p-dims)
          distance (calc-distance p-char-seq i-subseq)
          accuracy (* 100.0 (- 1 (/ (double distance) (count p-char-seq))))]
-    (when (<= min-accuracy accuracy)
-      (cond-> {:match/location  i-loc
-               :match/distance  distance
-               :match/accuracy  accuracy
-               :match/char-seqs (partition (first p-dims) i-subseq)}
-              (true? partial-match?) (assoc :match/partial? true)
-              (some? edge-kind) (assoc :match/edge-kind edge-kind)))))
+     (when (<= min-accuracy accuracy)
+       (cond-> {:match/location  i-loc
+                :match/distance  distance
+                :match/accuracy  accuracy
+                :match/char-seqs (partition (first p-dims) i-subseq)}
+               (some? edge-kind) (assoc :match/edge-kind edge-kind))))))
 
 ;;
 
@@ -178,7 +176,7 @@
                                   (when-some [match (->pattern-match
                                                       p-char-subseq p-dims
                                                       i-char-seqs shifted-i-loc
-                                                      min-accuracy true edge-kind)]
+                                                      min-accuracy edge-kind)]
                                     (reduced match))))
                               nil
                               edge-shifts)]

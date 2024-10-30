@@ -150,7 +150,6 @@
                      (more-> [3 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :top :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"
@@ -170,7 +169,6 @@
                      (more-> [0 1] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :left :match/edge-kind
                              (t/str-vec->char-seqs
                                ["oo"
@@ -191,7 +189,6 @@
                      (more-> [3 4] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :bottom :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"]) :match/char-seqs) m1)
@@ -210,7 +207,6 @@
                      (more-> [9 1] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :right :match/edge-kind
                              (t/str-vec->char-seqs
                                ["o"
@@ -317,14 +313,12 @@
                      (more-> [1 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :top :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"]) :match/char-seqs) m1
                      (more-> [0 3] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :bottom :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"
@@ -332,7 +326,6 @@
                      (more-> [8 1] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :right :match/edge-kind
                              (t/str-vec->char-seqs
                                ["oo"
@@ -353,21 +346,18 @@
                      (more-> [0 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :top :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"]) :match/char-seqs) m1
                      (more-> [1 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :top :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"]) :match/char-seqs) m2
                      (more-> [0 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :left :match/edge-kind
                              (t/str-vec->char-seqs
                                ["o"
@@ -376,7 +366,6 @@
                      (more-> [6 3] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :bottom :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"
@@ -384,7 +373,6 @@
                      (more-> [8 1] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :right :match/edge-kind
                              (t/str-vec->char-seqs
                                ["oo"
@@ -488,7 +476,7 @@
                               {:search-on-edges true})))
   (expecting "No edge matches duplicating a full one — w/ lower accuracy"
     (expect empty?
-            (filter :match/partial?
+            (filter :match/edge-kind
                     (sut/find-matches (t/str-vec->text-str ["ooo"
                                                             "ooo"
                                                             "ooo"])
@@ -665,7 +653,6 @@
                      (more-> [3 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :top :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"
@@ -685,7 +672,6 @@
                      (more-> [3 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
-                             true :match/partial?
                              :top :match/edge-kind
                              (t/str-vec->char-seqs
                                ["ooo"

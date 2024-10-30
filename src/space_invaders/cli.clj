@@ -10,13 +10,12 @@
             [space-invaders.text :as t]))
 
 (defn- ->output-match
-  [{:match/keys [location char-seqs distance accuracy partial? edge-kind]
+  [{:match/keys [location char-seqs distance accuracy edge-kind]
     :as         _match}]
   (cond-> {:location location
            #_#_:distance distance ; for debug purposes
            :accuracy (format "%.2f%%" accuracy)
            :matching (mapv str/join char-seqs)}
-          (true? partial?) (assoc :partial? true)
           (some? edge-kind) (assoc :edge-kind edge-kind)))
 
 (def matches-comp

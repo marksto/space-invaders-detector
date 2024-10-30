@@ -14,7 +14,6 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [0 0] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
                                  (t/str-vec->char-seqs
                                    ["---oo---"
@@ -35,7 +34,6 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [0 0] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
                                  (t/str-vec->char-seqs
                                    ["--o-----o--"
@@ -56,7 +54,6 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [0 0] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
                                  (t/str-vec->char-seqs
                                    ["-----oooooo-----"
@@ -79,9 +76,7 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [0 0] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
-                                 true :match/partial?
                                  :top :match/edge-kind
                                  (t/str-vec->char-seqs
                                    ["o-ooooooo-o"
@@ -100,9 +95,7 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [0 0] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
-                                 true :match/partial?
                                  :left :match/edge-kind
                                  (t/str-vec->char-seqs
                                    ["--"
@@ -126,9 +119,7 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [0 7] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
-                                 true :match/partial?
                                  :bottom :match/edge-kind
                                  (t/str-vec->char-seqs
                                    ["--o-----o--"]) :match/char-seqs) m1)
@@ -145,9 +136,7 @@
                 (more-of [m1 :as matches]
                          1 (count matches)
                          (more-> [10 0] :match/location
-                                 0 :match/distance
                                  100.0 :match/accuracy
-                                 true :match/partial?
                                  :right :match/edge-kind
                                  (t/str-vec->char-seqs
                                    ["-"
@@ -465,7 +454,6 @@
                                     "--oooo-o"]) :match/char-seqs) s4
                          (more-> [18 0] :match/location
                                  (≈ 80.36) :match/accuracy
-                                 true :match/partial?
                                  :top :match/edge-kind
                                  (t/str-vec->char-seqs
                                    ["o--ooo--"
@@ -477,7 +465,6 @@
                                     "o-o--o--"]) :match/char-seqs) s5
                          (more-> [17 45] :match/location
                                  (≈ 92.5) :match/accuracy
-                                 true :match/partial?
                                  :bottom :match/edge-kind
                                  (t/str-vec->char-seqs
                                    ["---ooo--"
