@@ -157,9 +157,11 @@
   [edge-kind
    {p-char-seqs :pattern/char-seqs :as pattern}
    {i-char-seqs :input/char-seqs :as input}
+   excluded-base-locs
    min-sub-pattern
    min-accuracy]
-  (let [edge-base-locs (edge-base-locs edge-kind pattern input)
+  (let [edge-base-locs (remove excluded-base-locs
+                               (edge-base-locs edge-kind pattern input))
         edge-shifts    (edge-shifts edge-kind pattern min-sub-pattern)]
     (reduce
       (fn [matches base-loc]
@@ -186,15 +188,17 @@
       edge-base-locs)))
 
 (defn- find-matches-on-edges
-  [pattern input min-sub-pattern min-accuracy]
-  (concat (find-edge-matches :top
-                             pattern input min-sub-pattern min-accuracy)
-          (find-edge-matches :left
-                             pattern input min-sub-pattern min-accuracy)
-          (find-edge-matches :bottom
-                             pattern input min-sub-pattern min-accuracy)
-          (find-edge-matches :right
-                             pattern input min-sub-pattern min-accuracy)))
+  [pattern input full-matches min-sub-pattern min-accuracy]
+  (let [fm-locs (set (map :match/location full-matches))]
+    (concat
+      (find-edge-matches :top
+                         pattern input fm-locs min-sub-pattern min-accuracy)
+      (find-edge-matches :left
+                         pattern input fm-locs min-sub-pattern min-accuracy)
+      (find-edge-matches :bottom
+                         pattern input fm-locs min-sub-pattern min-accuracy)
+      (find-edge-matches :right
+                         pattern input fm-locs min-sub-pattern min-accuracy))))
 
 (defn- find-full-matches
   [{pattern-str :pattern/text [p-width p-height :as p-dims] :pattern/dims :as _pattern}
@@ -225,9 +229,11 @@
                            :or   {min-accuracy    100.0
                                   min-sub-pattern 1}
                            :as   _opts}]
-   (let [pattern (->pattern pattern-str)
-         input   (->input input-str)]
-     (concat (find-full-matches pattern input min-accuracy)
-             (when search-on-edges
+   (let [pattern      (->pattern pattern-str)
+         input        (->input input-str)
+         full-matches (find-full-matches pattern input min-accuracy)]
+     (if search-on-edges
+       (concat full-matches
                (find-matches-on-edges
-                 pattern input min-sub-pattern min-accuracy))))))
+                 pattern input full-matches min-sub-pattern min-accuracy))
+       full-matches))))

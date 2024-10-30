@@ -398,9 +398,10 @@
                                                     "o-------oo"
                                                     "------oooo"
                                                     "------ooo-"])
-                              {:search-on-edges true})))
-  ;; FIXME: A partial match duplicating a full one!
-  #_(expecting "Multiple matches (all) with 100% accuracy — no intersection"
+                              {:search-on-edges true}))))
+
+(defexpect find-matches:no-duplicating-edge-matches-test
+  (expecting "No edge matches duplicating a full one — no intersection"
     (expect (more-of [m1 m2 :as matches]
                      2 (count matches)
                      (more-> [1 0] :match/location
@@ -426,8 +427,7 @@
                                                     "-------ooo"
                                                     "----------"])
                               {:search-on-edges true})))
-  ;; FIXME: A partial match duplicating a full one!
-  #_(expecting "Multiple matches (all) with 100% accuracy — some intersection"
+  (expecting "No edge matches duplicating a full one — some intersection"
     (expect (more-of [m1 m2 :as matches]
                      2 (count matches)
                      (more-> [1 0] :match/location
@@ -437,7 +437,7 @@
                                ["ooo"
                                 "ooo"
                                 "ooo"]) :match/char-seqs) m1
-                     (more-> [3 1] :match/location
+                     (more-> [3 2] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
                              (t/str-vec->char-seqs
@@ -448,30 +448,29 @@
                                                     "ooo"
                                                     "ooo"])
                               (t/str-vec->text-str ["-ooo------"
-                                                    "-ooooo----"
+                                                    "-ooo------"
                                                     "-ooooo----"
                                                     "---ooo----"
-                                                    "----------"])
+                                                    "---ooo----"])
                               {:search-on-edges true})))
-  ;; FIXME: A partial match duplicating a full one!
-  #_(expecting "Multiple matches (all) with 100% accuracy — more intersection"
+  (expecting "No edge matches duplicating a full one — more intersection"
     (expect (more-of [m1 m2 m3 :as matches]
                      3 (count matches)
-                     (more-> [1 0] :match/location
+                     (more-> [3 0] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
                              (t/str-vec->char-seqs
                                ["ooo"
                                 "ooo"
                                 "ooo"]) :match/char-seqs) m1
-                     (more-> [3 1] :match/location
+                     (more-> [7 1] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
                              (t/str-vec->char-seqs
                                ["ooo"
                                 "ooo"
                                 "ooo"]) :match/char-seqs) m2
-                     (more-> [4 2] :match/location
+                     (more-> [5 2] :match/location
                              0 :match/distance
                              100.0 :match/accuracy
                              (t/str-vec->char-seqs
@@ -481,12 +480,25 @@
             (sut/find-matches (t/str-vec->text-str ["ooo"
                                                     "ooo"
                                                     "ooo"])
-                              (t/str-vec->text-str ["-ooo------"
-                                                    "-ooooo----"
-                                                    "-oooooo---"
-                                                    "---oooo---"
-                                                    "----ooo---"])
-                              {:search-on-edges true}))))
+                              (t/str-vec->text-str ["---ooo----"
+                                                    "---ooo-ooo"
+                                                    "---ooooooo"
+                                                    "-----ooooo"
+                                                    "-----ooo--"])
+                              {:search-on-edges true})))
+  (expecting "No edge matches duplicating a full one — w/ lower accuracy"
+    (expect empty?
+            (filter :match/partial?
+                    (sut/find-matches (t/str-vec->text-str ["ooo"
+                                                            "ooo"
+                                                            "ooo"])
+                                      (t/str-vec->text-str ["---ooo----"
+                                                            "---ooo-ooo"
+                                                            "---ooooooo"
+                                                            "-----ooooo"
+                                                            "-----ooo--"])
+                                      {:min-accuracy    60.0
+                                       :search-on-edges true})))))
 
 (defexpect find-matches:partial-matches:only-full:lower-accuracy-test
   (expecting "Partial full matches with 80% accuracy"
@@ -578,8 +590,8 @@
                               {:search-on-edges true
                                :min-accuracy    80.0})))
   (expecting "All partial matches with 50% accuracy — almost exact match"
-    (expect (more-of [m1 m2 m3 m4 m5 m6 m7 :as matches]
-                     7 (count matches)
+    (expect (more-of [m1 m2 m3 m4 m5 :as matches]
+                     5 (count matches)
                      (more-> [3 0] :match/location
                              4 :match/distance
                              (≈ 55.55) :match/accuracy
@@ -614,23 +626,7 @@
                              (t/str-vec->char-seqs
                                ["oxo"
                                 "ooo"
-                                "---"]) :match/char-seqs) m5
-                     (more-> [3 0] :match/location
-                             3 :match/distance
-                             (≈ 50.0) :match/accuracy
-                             true :match/partial?
-                             :top :match/edge-kind
-                             (t/str-vec->char-seqs
-                               ["---"
-                                "ooo"]) :match/char-seqs) m6
-                     (more-> [3 3] :match/location
-                             3 :match/distance
-                             (≈ 50.0) :match/accuracy
-                             true :match/partial?
-                             :bottom :match/edge-kind
-                             (t/str-vec->char-seqs
-                               ["ooo"
-                                "---"]) :match/char-seqs) m7)
+                                "---"]) :match/char-seqs) m5)
             (sut/find-matches (t/str-vec->text-str ["ooo"
                                                     "ooo"
                                                     "ooo"])
