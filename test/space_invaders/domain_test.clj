@@ -176,8 +176,8 @@
 
 ;;
 
-(defexpect find-invaders:only-full-matches-test
-  (expecting "FULL matches at 99.8% sensitivity — Squid & Crab (example data)"
+(defexpect find-invaders:only-full-matches:default-sensitivity-test
+  (expecting "FULL matches at default sensitivity — Squid & Crab (example data)"
     (let [invaders     (sut/build-invaders)
           radar-sample (sut/build-radar-sample invaders)]
       (expect (more->
@@ -186,7 +186,7 @@
                 (more-of [s1 s2 s3 s4 :as squids]
                          (expect 4 (count squids))
                          (expect (more-> [42 0] :match/location
-                                         (≈ 99.88) :match/accuracy
+                                         (≈ 87.5) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--ooo-o-"
@@ -198,7 +198,7 @@
                                             "o-o--ooo"]) :match/char-seqs)
                                  s1)
                          (expect (more-> [35 15] :match/location
-                                         (≈ 99.84) :match/accuracy
+                                         (≈ 84.38) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--oooo--"
@@ -210,7 +210,7 @@
                                             "oo--oo-o"]) :match/char-seqs)
                                  s2)
                          (expect (more-> [16 28] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 85.94) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---o-o--"
                                             "-ooooo--"
@@ -222,7 +222,7 @@
                                             "o-o--ooo"]) :match/char-seqs)
                                  s3)
                          (expect (more-> [82 41] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 85.94) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--ooooo-"
@@ -238,7 +238,7 @@
                 (more-of [c1 c2 c3 :as crabs]
                          (expect 3 (count crabs))
                          (expect (more-> [74 1] :match/location
-                                         (≈ 99.88) :match/accuracy
+                                         (≈ 87.5) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["ooo-----o--"
                                             "o--o-o-o---"
@@ -250,7 +250,7 @@
                                             "---oo-oo---"]) :match/char-seqs)
                                  c1)
                          (expect (more-> [85 12] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 86.36) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--oo----o--"
                                             "-------o---"
@@ -262,7 +262,7 @@
                                             "--ooo-oo--o"]) :match/char-seqs)
                                  c2)
                          (expect (more-> [60 13] :match/location
-                                         (≈ 99.91) :match/accuracy
+                                         (≈ 90.9) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--o-----o--"
                                             "-------o---"
@@ -275,10 +275,11 @@
                                  c3))
                 :crab)
 
-              (sut/find-invaders invaders radar-sample)))))
+              (sut/find-invaders invaders radar-sample
+                                 {:sensitivity 80.0})))))
 
-(defexpect find-invaders:only-full-matches-at-lower-sensitivity-test
-  (expecting "FULL matches at 99.7% sensitivity — Squid & Crab (example data)"
+(defexpect find-invaders:only-full-matches:lower-sensitivity-test
+  (expecting "FULL matches at a lower sensitivity — Squid & Crab (example data)"
     (let [invaders     (sut/build-invaders)
           radar-sample (sut/build-radar-sample invaders)]
       (expect (more->
@@ -287,7 +288,7 @@
                 (more-of [s1 s2 s3 s4 s5 s6 s7 s8 :as squids]
                          (expect 8 (count squids))
                          (expect (more-> [42 0] :match/location
-                                         (≈ 99.88) :match/accuracy
+                                         (≈ 87.5) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--ooo-o-"
@@ -299,7 +300,7 @@
                                             "o-o--ooo"]) :match/char-seqs)
                                  s1)
                          (expect (more-> [77 2] :match/location
-                                         (≈ 99.72) :match/accuracy
+                                         (≈ 71.88) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["o-o-o---"
                                             "-ooooo--"
@@ -311,7 +312,7 @@
                                             "o-o---o-"]) :match/char-seqs)
                                  s2)
                          (expect (more-> [60 14] :match/location
-                                         (≈ 99.72) :match/accuracy
+                                         (≈ 71.88) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["-------o"
                                             "--oooo-o"
@@ -323,7 +324,7 @@
                                             "-------o"]) :match/char-seqs)
                                  s3)
                          (expect (more-> [63 14] :match/location
-                                         (≈ 99.70) :match/accuracy
+                                         (≈ 70.31) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["----o---"
                                             "ooo-oo--"
@@ -335,7 +336,7 @@
                                             "----o---"]) :match/char-seqs)
                                  s4)
                          (expect (more-> [35 15] :match/location
-                                         (≈ 99.84) :match/accuracy
+                                         (≈ 84.38) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--oooo--"
@@ -347,7 +348,7 @@
                                             "oo--oo-o"]) :match/char-seqs)
                                  s5)
                          (expect (more-> [16 28] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 85.94) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---o-o--"
                                             "-ooooo--"
@@ -359,7 +360,7 @@
                                             "o-o--ooo"]) :match/char-seqs)
                                  s6)
                          (expect (more-> [83 40] :match/location
-                                         (≈ 99.70) :match/accuracy
+                                         (≈ 70.31) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--------"
                                             "--oo----"
@@ -371,7 +372,7 @@
                                             "o-oo-o--"]) :match/char-seqs)
                                  s7)
                          (expect (more-> [82 41] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 85.94) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--ooooo-"
@@ -387,7 +388,7 @@
                 (more-of [c1 c2 c3 c4 :as crabs]
                          (expect 4 (count crabs))
                          (expect (more-> [74 1] :match/location
-                                         (≈ 99.88) :match/accuracy
+                                         (≈ 87.5) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["ooo-----o--"
                                             "o--o-o-o---"
@@ -399,7 +400,7 @@
                                             "---oo-oo---"]) :match/char-seqs)
                                  c1)
                          (expect (more-> [85 12] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 86.36) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--oo----o--"
                                             "-------o---"
@@ -411,7 +412,7 @@
                                             "--ooo-oo--o"]) :match/char-seqs)
                                  c2)
                          (expect (more-> [60 13] :match/location
-                                         (≈ 99.91) :match/accuracy
+                                         (≈ 90.9) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--o-----o--"
                                             "-------o---"
@@ -423,7 +424,7 @@
                                             "---oo-oo---"]) :match/char-seqs)
                                  c3)
                          (expect (more-> [82 40] :match/location
-                                         (≈ 99.74) :match/accuracy
+                                         (≈ 73.86) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["-----------"
                                             "---oo------"
@@ -437,10 +438,10 @@
                 :crab)
 
               (sut/find-invaders invaders radar-sample
-                                 {:sensitivity 99.7})))))
+                                 {:sensitivity 70.0})))))
 
-(defexpect find-invaders:all-matches-test
-  (expecting "ALL matches at 99.8% sensitivity — Squid & Crab (example data)"
+(defexpect find-invaders:all-matches:default-sensitivity-test
+  (expecting "ALL matches at default sensitivity — Squid & Crab (example data)"
     (let [invaders     (sut/build-invaders)
           radar-sample (sut/build-radar-sample invaders)]
       (expect (more->
@@ -449,7 +450,7 @@
                 (more-of [s1 s2 s3 s4 s5 s6 :as squids]
                          (expect 6 (count squids))
                          (expect (more-> [42 0] :match/location
-                                         (≈ 99.88) :match/accuracy
+                                         (≈ 87.5) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--ooo-o-"
@@ -461,7 +462,7 @@
                                             "o-o--ooo"]) :match/char-seqs)
                                  s1)
                          (expect (more-> [35 15] :match/location
-                                         (≈ 99.84) :match/accuracy
+                                         (≈ 84.38) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--oooo--"
@@ -473,7 +474,7 @@
                                             "oo--oo-o"]) :match/char-seqs)
                                  s2)
                          (expect (more-> [16 28] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 85.94) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---o-o--"
                                             "-ooooo--"
@@ -485,7 +486,7 @@
                                             "o-o--ooo"]) :match/char-seqs)
                                  s3)
                          (expect (more-> [82 41] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 85.94) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["---oo---"
                                             "--ooooo-"
@@ -497,7 +498,7 @@
                                             "--oooo-o"]) :match/char-seqs)
                                  s4)
                          (expect (more-> [18 0] :match/location
-                                         (≈ 99.80) :match/accuracy
+                                         (≈ 80.36) :match/accuracy
                                          true :match/partial?
                                          :top :match/edge-kind
                                          (t/str-vec->char-seqs
@@ -510,7 +511,7 @@
                                             "o-o--o--"]) :match/char-seqs)
                                  s5)
                          (expect (more-> [17 45] :match/location
-                                         (≈ 99.93) :match/accuracy
+                                         (≈ 92.5) :match/accuracy
                                          true :match/partial?
                                          :bottom :match/edge-kind
                                          (t/str-vec->char-seqs
@@ -525,7 +526,7 @@
                 (more-of [c1 c2 c3 :as crabs]
                          (expect 3 (count crabs))
                          (expect (more-> [74 1] :match/location
-                                         (≈ 99.88) :match/accuracy
+                                         (≈ 87.5) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["ooo-----o--"
                                             "o--o-o-o---"
@@ -537,7 +538,7 @@
                                             "---oo-oo---"]) :match/char-seqs)
                                  c1)
                          (expect (more-> [85 12] :match/location
-                                         (≈ 99.86) :match/accuracy
+                                         (≈ 86.36) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--oo----o--"
                                             "-------o---"
@@ -549,7 +550,7 @@
                                             "--ooo-oo--o"]) :match/char-seqs)
                                  c2)
                          (expect (more-> [60 13] :match/location
-                                         (≈ 99.91) :match/accuracy
+                                         (≈ 90.9) :match/accuracy
                                          (t/str-vec->char-seqs
                                            ["--o-----o--"
                                             "-------o---"
@@ -563,7 +564,8 @@
                 :crab)
 
               (sut/find-invaders invaders radar-sample
-                                 {:edges         true
+                                 {:sensitivity   80.0
+                                  :edges         true
                                   :edges-cut-off 3})))))
 
 ;;
