@@ -97,7 +97,7 @@
     :update-fn conj]
    ["-s" "--sensitivity SENSITIVITY"
     "Search sensitivity in percent in range 0 (exclusive) — 100 (inclusive)."
-    :default 99.8
+    :default 80.0
     :parse-fn Float/parseFloat
     :validate [#(and (float? %) (< 0 %) (<= % 100))
                "Must be a floating point number in the range (0 .. 100]."]]
@@ -132,7 +132,7 @@
              "  clojure -M:run path/to/radar_sample.txt"
              "  clojure -M:run -i path/to/invader_1.txt -i path/to/invader_2.txt"
              "  clojure -M:run --edges false path/to/radar_sample.txt"
-             "  clojure -M:run --edges false --sensitivity 99.7 path/to/radar_sample.txt"
+             "  clojure -M:run --edges false --sensitivity 70.0 path/to/radar_sample.txt"
              "  clojure -M:run --edges-cut-off 2 path/to/radar_sample.txt"
              ]))
 
@@ -190,6 +190,6 @@
   (-main "--edges-cut-off" "2")
   (-main "--edges-cut-off" "3")
   (-main "--edges" "false")
-  (-main "--edges" "false" "--sensitivity" "99.725")
+  (-main "--edges" "false" "--sensitivity" "70.0")
   (-main "-h")
   .)
