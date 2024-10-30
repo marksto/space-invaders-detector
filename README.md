@@ -2,7 +2,7 @@
 
 A command line utility that is a solution to a development assignment.
 
-For assignment details, see `metric-clojure-assignment.md`.
+For assignment details, see [dev-assignment.md](dev-assignment.md).
 
 ## Usage
 
@@ -16,3 +16,8 @@ Here's an example output:
 
 ![Screenshot with tool output 1](img/example-output-1.png)
 ![Screenshot with tool output 2](img/example-output-2.png)
+
+## Inspiration
+
+- https://spaceinvaders.fandom.com/wiki/Space_Invaders_wiki
+- https://spaceinvaders.fandom.com/wiki/Category:Enemies
