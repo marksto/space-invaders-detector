@@ -66,9 +66,9 @@
    i-char-seqs i-loc
    min-accuracy
    & [partial-match? edge-kind]]
-  (let [i-subseq (t/extract-char-subseq i-char-seqs i-loc p-dims)
-        distance (calc-distance p-char-seq i-subseq)
-        accuracy (- 100.0 (/ distance (count p-char-seq)))]
+   (let [i-subseq (t/extract-char-subseq i-char-seqs i-loc p-dims)
+         distance (calc-distance p-char-seq i-subseq)
+         accuracy (* 100.0 (- 1 (/ (double distance) (count p-char-seq))))]
     (when (<= min-accuracy accuracy)
       (cond-> {:match/location  i-loc
                :match/distance  distance
@@ -214,7 +214,7 @@
                [pattern-str input-str {:keys [min-accuracy
                                               search-on-edges
                                               min-sub-pattern]
-                                       :or   {min-accuracy    99.8
+                                       :or   {min-accuracy    100.0
                                               min-sub-pattern 1}
                                        :as   _opts}])}
   ([pattern-str input-str]
@@ -222,7 +222,7 @@
   ([pattern-str input-str {:keys [min-accuracy
                                   search-on-edges
                                   min-sub-pattern]
-                           :or   {min-accuracy    99.8
+                           :or   {min-accuracy    100.0
                                   min-sub-pattern 1}
                            :as   _opts}]
    (let [pattern (->pattern pattern-str)
