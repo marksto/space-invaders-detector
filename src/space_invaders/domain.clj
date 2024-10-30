@@ -17,6 +17,10 @@
   (some-> (or (io/resource path) (io/file path))
           (slurp)))
 
+;;
+
+(def valid-invader-pattern-chars #{\- \o})
+
 (defn build-invaders
   ([]
    (build-invaders nil))
@@ -24,7 +28,8 @@
    (reduce
      (fn [res pattern-path]
        (let [filename    (fs/strip-ext (fs/file-name pattern-path))
-             pattern-str (m/validate-pattern-str (read-text-file pattern-path))]
+             pattern-str (m/validate-pattern-str (read-text-file pattern-path)
+                                                 valid-invader-pattern-chars)]
          (if (f/failed? pattern-str)
            (reduced pattern-str)
            (conj res {:invader/type    (keyword filename)

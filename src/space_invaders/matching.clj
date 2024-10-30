@@ -8,9 +8,8 @@
 
 ;; patterns
 
-(def valid-pattern-chars #{\- \o})
-
-(defn validate-pattern-str [pattern-str]
+(defn validate-pattern-str
+  [pattern-str valid-pattern-chars]
   (let [pattern-lines (str/split-lines pattern-str)]
     (cond
       (seq (mapcat #(remove valid-pattern-chars %) pattern-lines))

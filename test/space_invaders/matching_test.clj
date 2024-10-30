@@ -6,48 +6,52 @@
             [space-invaders.test-utils :refer [≈]]))
 
 (defexpect validate-pattern-str-test
-  (expecting "Valid pattern is returned as is"
-    (doseq [valid-pattern [(t/str-vec->text-str ["---oo---"
-                                                 "--oooo--"
-                                                 "-oooooo-"
-                                                 "oo-oo-oo"
-                                                 "oooooooo"
-                                                 "--o--o--"
-                                                 "-o-oo-o-"
-                                                 "o-o--o-o"])
-                           (t/str-vec->text-str ["--o-----o--"
-                                                 "---o---o---"
-                                                 "--ooooooo--"
-                                                 "-oo-ooo-oo-"
-                                                 "ooooooooooo"
-                                                 "o-ooooooo-o"
-                                                 "o-o-----o-o"
-                                                 "---oo-oo---"])]]
-      (expect valid-pattern (sut/validate-pattern-str valid-pattern))))
-  (expecting "Pattern must contain only valid characters"
-    (expect (more-of {msg :message}
-                     #"^Pattern must contain only valid characters" msg)
-            (sut/validate-pattern-str
-              (t/str-vec->text-str ["--o-----o--"
-                                    "---o---x---"
-                                    "--ooooooo--"
-                                    "-oo-ooo-oo-"
-                                    "ooooooooooo"
-                                    "o-ooooooo-o"
-                                    "o-o-----o-o"
-                                    "---oo-oo---"]))))
-  (expecting "Pattern lines have to be of the same length"
-    (expect (more-of {msg :message}
-                     #"^Pattern lines have to be of the same length" msg)
-            (sut/validate-pattern-str
-              (t/str-vec->text-str ["--o-----o--"
-                                    "---o---o-"
-                                    "--ooooooo--"
-                                    "-oo-ooo-oo-"
-                                    "ooooooooooo"
-                                    "o-ooooooo-o"
-                                    "o-o-----o-o"
-                                    "---oo-oo---"])))))
+  (let [valid-pattern-chars #{\- \o}]
+    (expecting "Valid pattern is returned as is"
+      (doseq [valid-pattern [(t/str-vec->text-str ["---oo---"
+                                                   "--oooo--"
+                                                   "-oooooo-"
+                                                   "oo-oo-oo"
+                                                   "oooooooo"
+                                                   "--o--o--"
+                                                   "-o-oo-o-"
+                                                   "o-o--o-o"])
+                             (t/str-vec->text-str ["--o-----o--"
+                                                   "---o---o---"
+                                                   "--ooooooo--"
+                                                   "-oo-ooo-oo-"
+                                                   "ooooooooooo"
+                                                   "o-ooooooo-o"
+                                                   "o-o-----o-o"
+                                                   "---oo-oo---"])]]
+        (expect valid-pattern (sut/validate-pattern-str valid-pattern
+                                                        valid-pattern-chars))))
+    (expecting "Pattern must contain only valid characters"
+      (expect (more-of {msg :message}
+                #"^Pattern must contain only valid characters" msg)
+              (sut/validate-pattern-str
+                (t/str-vec->text-str ["--o-----o--"
+                                      "---o---x---"
+                                      "--ooooooo--"
+                                      "-oo-ooo-oo-"
+                                      "ooooooooooo"
+                                      "o-ooooooo-o"
+                                      "o-o-----o-o"
+                                      "---oo-oo---"])
+                valid-pattern-chars)))
+    (expecting "Pattern lines have to be of the same length"
+      (expect (more-of {msg :message}
+                #"^Pattern lines have to be of the same length" msg)
+              (sut/validate-pattern-str
+                (t/str-vec->text-str ["--o-----o--"
+                                      "---o---o-"
+                                      "--ooooooo--"
+                                      "-oo-ooo-oo-"
+                                      "ooooooooooo"
+                                      "o-ooooooo-o"
+                                      "o-o-----o-o"
+                                      "---oo-oo---"])
+                valid-pattern-chars)))))
 
 ;;
 
