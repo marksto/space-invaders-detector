@@ -5,7 +5,9 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.cli :as cli]
-            [fipp.edn :refer [pprint]]))
+            [failjure.core :as f]
+            [fipp.edn :refer [pprint]]
+            [io.aviso.exception :as ex]))
 
 ;; text manipulations
 
@@ -33,12 +35,14 @@
   (let [pattern-lines (str/split-lines pattern-str)]
     (cond
       (seq (mapcat #(remove valid-pattern-chars %) pattern-lines))
-      {:error/msg  "Pattern must contain only valid characters"
-       :error/data {:pattern-lines pattern-lines}}
+      (f/fail "Pattern must contain only valid characters\n%s"
+              (with-out-str (pprint pattern-lines)))
       ;;
       (not= 1 (count (set (map count pattern-lines))))
-      {:error/msg  "Pattern lines have to be of the same length"
-       :error/data {:pattern-lines pattern-lines}})))
+      (f/fail "Pattern lines have to be of the same length\n%s"
+              (with-out-str (pprint pattern-lines)))
+      ;;
+      :else pattern-str)))
 
 (defn ->pattern [pattern-str]
   {:pattern/text      pattern-str
@@ -53,14 +57,16 @@
         [input-width input-height :as input-dims] (text-dimensions input-str)]
     (cond
       (not= 1 (count (set (map count input-lines))))
-      {:error/msg  "Input lines have to be of the same length"
-       :error/data {:input-lines input-lines}}
+      (f/fail "Input lines have to be of the same length\n%s"
+              (with-out-str (pprint input-lines)))
       ;;
       (or (< input-width min-width)
           (< input-height min-height))
-      {:error/msg  "Input dimension must be equal to or bigger than the minimal"
-       :error/data {:input-dims input-dims
-                    :min-dims   min-dims}})))
+      (f/fail "Input dimensions have to fit all patterns\n%s"
+              (with-out-str (pprint {:input-dims input-dims
+                                     :min-dims   min-dims})))
+      ;;
+      :else input-str)))
 
 (defn ->input
   [input-str]
@@ -243,52 +249,6 @@
 
 ;; main logic (high-level)
 
-(declare print-validation-error)
-
-(defn max-invader-dims
-  [invaders]
-  (reduce (fn [[max-width max-height] {:invader/keys [pattern]}]
-            (let [[pattern-width pattern-height] (text-dimensions pattern)]
-              [(max max-width pattern-width) (max max-height pattern-height)]))
-          [1 1]
-          invaders))
-
-(defn- prepare-search-opts
-  [{:keys [sensitivity edges edges-cut-off] :as _opts}]
-  (cond-> {}
-          (some? sensitivity) (assoc :min-accuracy sensitivity)
-          (true? edges) (assoc :search-on-edges true)
-          (some? edges-cut-off) (assoc :min-sub-pattern (max 1 edges-cut-off))))
-
-(defn- find-invader
-  [{:invader/keys [pattern] :as _invader} radar-sample opts]
-  (if-some [error (validate-pattern-str pattern)]
-    (do (print-validation-error error)
-        nil)
-    (find-matches pattern radar-sample opts)))
-
-(defn find-invaders
-  {:arglists '([invaders radar-sample]
-               [invaders radar-sample {:keys [sensitivity edges edges-cut-off]
-                                       :as   _opts}])}
-  ([invaders radar-sample]
-   (find-invaders invaders radar-sample nil))
-  ([invaders radar-sample opts]
-   (let [max-invader-dims (max-invader-dims invaders)]
-     (if-some [error (validate-input-str radar-sample max-invader-dims)]
-       (do (print-validation-error error)
-           nil)
-       (let [search-opts (prepare-search-opts opts)]
-         (reduce (fn [res {invader-type :invader/type :as invader}]
-                   (let [matches (find-invader invader radar-sample search-opts)]
-                     (if (seq matches)
-                       (assoc res invader-type matches)
-                       res)))
-                 {}
-                 invaders))))))
-
-;;
-
 (def example-radar-sample-path
   "space_invaders/radar_samples/example.txt")
 
@@ -302,25 +262,63 @@
   ([]
    (build-invaders nil))
   ([invader-pattern-paths]
-   (reduce (fn [res pattern-path]
-             (let [filename        (fs/strip-ext (fs/file-name pattern-path))
-                   invader-pattern (read-text-file pattern-path)]
-               (conj res {:invader/type    (keyword filename)
-                          :invader/pattern invader-pattern})))
-           []
-           (or (seq invader-pattern-paths)
-               default-invader-pattern-paths))))
+   (reduce
+     (fn [res pattern-path]
+       (let [filename    (fs/strip-ext (fs/file-name pattern-path))
+             pattern-str (validate-pattern-str (read-text-file pattern-path))]
+         (if (f/failed? pattern-str)
+           (reduced pattern-str)
+           (conj res {:invader/type    (keyword filename)
+                      :invader/pattern pattern-str}))))
+     []
+     (or (seq invader-pattern-paths)
+         default-invader-pattern-paths))))
+
+(defn max-invader-dims
+  [invaders]
+  (reduce (fn [[max-width max-height] {:invader/keys [pattern]}]
+            (let [[pattern-width pattern-height] (text-dimensions pattern)]
+              [(max max-width pattern-width) (max max-height pattern-height)]))
+          [1 1]
+          invaders))
+
+(defn build-radar-sample
+  [radar-sample-path invaders]
+  (let [radar-sample-str (read-text-file radar-sample-path)
+        max-invader-dims (max-invader-dims invaders)]
+    (validate-input-str radar-sample-str max-invader-dims)))
+
+;;
+
+(defn- prepare-search-opts
+  [{:keys [sensitivity edges edges-cut-off] :as _opts}]
+  (cond-> {}
+          (some? sensitivity) (assoc :min-accuracy sensitivity)
+          (true? edges) (assoc :search-on-edges true)
+          (some? edges-cut-off) (assoc :min-sub-pattern (max 1 edges-cut-off))))
+
+(defn find-invaders
+  {:arglists '([invaders radar-sample]
+               [invaders radar-sample {:keys [sensitivity edges edges-cut-off]
+                                       :as   _opts}])}
+  ([invaders radar-sample]
+   (find-invaders invaders radar-sample nil))
+  ([invaders radar-sample opts]
+   (let [search-opts (prepare-search-opts opts)]
+     (reduce (fn [res {invader-type    :invader/type
+                       invader-pattern :invader/pattern :as _invader}]
+               (let [matches (find-matches invader-pattern radar-sample search-opts)]
+                 (if (seq matches)
+                   (assoc res invader-type matches)
+                   res)))
+             {}
+             invaders))))
 
 ;; I/O and entrypoint
 
 (defn read-text-file [path]
   (some-> (or (io/resource path) (io/file path))
           (slurp)))
-
-(defn print-validation-error
-  [{:error/keys [msg data] :as _error}]
-  (println (style msg :red))
-  (println (style (with-out-str (pprint data)) :red)))
 
 (defn- ->output-match
   [{:match/keys [location char-seqs distance accuracy partial? edge-kind]
@@ -482,19 +480,20 @@
   (let [{:keys [do-exit radar-sample-path options]} (validate-args args)]
     (if do-exit
       (exit do-exit)
-      (try
-        (let [radar-sample (read-text-file radar-sample-path)
-              invaders     (build-invaders (:invader options))
-              results      (find-invaders invaders radar-sample options)]
-          (print-results results)
-          (print-radar-sample-with-matches invaders radar-sample results)
-          (exit {:status-code 0
-                 :output-msg  (when (seq results)
-                                "Show this to the commander, quickly!")}))
-        (catch Exception ex
+      (f/try-all [invaders     (build-invaders (:invader options))
+                  radar-sample (build-radar-sample radar-sample-path invaders)
+                  results      (find-invaders invaders radar-sample options)]
+        (do (print-results results)
+            (print-radar-sample-with-matches invaders radar-sample results)
+            (exit {:status-code 0
+                   :output-msg  (when (seq results)
+                                  "Show this to the commander, quickly!")}))
+        (f/when-failed [e]
           (exit {:status-code 2
-                 :output-msg  (style (format "Something went wrong:\n%s" ex)
-                                     :red)}))))))
+                 :output-msg  (format "Something went wrong:\n%s"
+                                      (if (instance? Throwable e)
+                                        (ex/format-exception e)
+                                        (style (f/message e) :red)))}))))))
 
 (comment
   (-main)

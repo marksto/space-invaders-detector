@@ -2,7 +2,9 @@
 
  :deps  {babashka/fs                 {:mvn/version "0.5.22"}
          clj-fuzzy/clj-fuzzy         {:mvn/version "0.4.1"}
+         failjure/failjure           {:mvn/version "2.3.0"}
          fipp/fipp                   {:mvn/version "0.6.26"}
+         io.aviso/pretty             {:mvn/version "1.4.4"}
          org.clojure/tools.cli       {:mvn/version "1.1.230"}
          org.clojars.pjlegato/clansi {:mvn/version "1.3.0"}}
 

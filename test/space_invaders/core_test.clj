@@ -1,7 +1,7 @@
 (ns space-invaders.core-test
   (:require [clojure.string :as str]
             [expectations.clojure.test
-             :refer [approximately defexpect expect expecting in more-> more-of]]
+             :refer [approximately defexpect expect expecting more-> more-of]]
             [space-invaders.core :as sut]))
 
 (def example-radar-sample
@@ -23,61 +23,63 @@
 (defexpect validate-pattern-str-test
   (expecting "Example data patterns are valid"
     (doseq [valid-pattern (map :invader/pattern (sut/build-invaders))]
-      (expect nil? (sut/validate-pattern-str valid-pattern))))
+      (expect valid-pattern (sut/validate-pattern-str valid-pattern))))
   (expecting "Pattern must contain only valid characters"
-    (expect {:error/msg "Pattern must contain only valid characters"}
-            (in (sut/validate-pattern-str
-                  (->text-str ["--o-----o--"
-                               "---o---x---"
-                               "--ooooooo--"
-                               "-oo-ooo-oo-"
-                               "ooooooooooo"
-                               "o-ooooooo-o"
-                               "o-o-----o-o"
-                               "---oo-oo---"])))))
+    (expect (more-of {msg :message}
+                     (expect #"^Pattern must contain only valid characters" msg))
+            (sut/validate-pattern-str
+              (->text-str ["--o-----o--"
+                           "---o---x---"
+                           "--ooooooo--"
+                           "-oo-ooo-oo-"
+                           "ooooooooooo"
+                           "o-ooooooo-o"
+                           "o-o-----o-o"
+                           "---oo-oo---"]))))
   (expecting "Pattern lines have to be of the same length"
-    (expect {:error/msg "Pattern lines have to be of the same length"}
-            (in (sut/validate-pattern-str
-                  (->text-str ["--o-----o--"
-                               "---o---o-"
-                               "--ooooooo--"
-                               "-oo-ooo-oo-"
-                               "ooooooooooo"
-                               "o-ooooooo-o"
-                               "o-o-----o-o"
-                               "---oo-oo---"]))))))
+    (expect (more-of {msg :message}
+                     (expect #"^Pattern lines have to be of the same length" msg))
+            (sut/validate-pattern-str
+              (->text-str ["--o-----o--"
+                           "---o---o-"
+                           "--ooooooo--"
+                           "-oo-ooo-oo-"
+                           "ooooooooooo"
+                           "o-ooooooo-o"
+                           "o-o-----o-o"
+                           "---oo-oo---"])))))
 
 (defexpect validate-input-str-test
-  (let [max-invader-dims (sut/max-invader-dims (sut/build-invaders))]
+  (let [max-invader-dims [11 8]]
     (expecting "Example data input is valid"
-      (expect nil? (sut/validate-input-str example-radar-sample
-                                           max-invader-dims)))
-    (expecting "Pattern must contain only valid characters"
-      (expect {:error/msg "Input lines have to be of the same length"}
-              (in (sut/validate-input-str
-                    (->text-str ["--------"
-                                 "-------"
-                                 "--------"
-                                 "--------"
-                                 "------"
-                                 "--------"
-                                 "--------"
-                                 "--------"])
-                    max-invader-dims))))
-    (expecting "Input dimension must be equal to or bigger than the minimal"
-      (expect {:error/msg  "Input dimension must be equal to or bigger than the minimal"
-               :error/data {:input-dims [8 8]
-                            :min-dims   max-invader-dims}}
-              (in (sut/validate-input-str
-                    (->text-str ["--------"
-                                 "--------"
-                                 "--------"
-                                 "--------"
-                                 "--------"
-                                 "--------"
-                                 "--------"
-                                 "--------"])
-                    max-invader-dims))))))
+      (expect example-radar-sample
+              (sut/validate-input-str example-radar-sample max-invader-dims)))
+    (expecting "Input lines have to be of the same length"
+      (expect (more-of {msg :message}
+                       (expect #"^Input lines have to be of the same length" msg))
+              (sut/validate-input-str
+                (->text-str ["-----------"
+                             "----------"
+                             "-----------"
+                             "-----------"
+                             "---------"
+                             "-----------"
+                             "-----------"
+                             "-----------"])
+                max-invader-dims)))
+    (expecting "Input dimensions have to fit all patterns"
+      (expect (more-of {msg :message}
+                       (expect #"^Input dimensions have to fit all patterns" msg))
+              (sut/validate-input-str
+                (->text-str ["--------"
+                             "--------"
+                             "--------"
+                             "--------"
+                             "--------"
+                             "--------"
+                             "--------"
+                             "--------"])
+                max-invader-dims)))))
 
 ;;
 
