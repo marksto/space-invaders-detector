@@ -20,6 +20,6 @@
                  pjstadig/humane-test-output          {:mvn/version "0.11.0"}}}
 
   :run
-  {:main-opts ["-m" "space-invaders.core"]}
+  {:main-opts ["-m" "space-invaders.cli"]}
   }
  }

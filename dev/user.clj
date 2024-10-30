@@ -6,5 +6,5 @@
      (catch Exception _))
 
 ;; NB: Assign these to a dedicated project-specific REPL command.
-(load "/space_invaders/core")
-(in-ns 'space-invaders.core)
+(load "/space_invaders/domain")
+(in-ns 'space-invaders.domain)
