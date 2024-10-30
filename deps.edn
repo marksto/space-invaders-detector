@@ -35,5 +35,9 @@
                 ;; Any Eastwood options can be passed here as edn:
                 {}]
    :extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}}
+
+  ;; Run with "clj-kondo --lint ."
+  :clj-kondo
+  {#_"Clj-kondo has to be installed locally. I use https://mise.jdx.dev/."}
   }
  }
