@@ -20,12 +20,13 @@
   (juxt #(- (reduce + (map count (:match/char-seqs %))))
         #(- (:match/accuracy %))))
 
-(defn print-results [results]
-  (when (some? results)
-    (let [total-matches (reduce + 0 (map (comp count second) results))]
+(defn print-matches-as-list
+  [{:keys [matches-by-type] :as _results}]
+  (when (some? matches-by-type)
+    (let [total-matches (reduce + 0 (map (comp count second) matches-by-type))]
       (println (format "Found %s possible invader matches in total.\n"
                        total-matches)))
-    (doseq [[invader-type matches] results]
+    (doseq [[invader-type matches] matches-by-type]
       (println (format "Found %s possible '%s' invader matches:"
                        (count matches) (name invader-type)))
       (doseq [output-match (->> matches
@@ -63,7 +64,7 @@
       (map-indexed (fn [idy m-line] [idy m-line]) char-seqs))))
 
 (defn- build-loc->match-char
-  [results invaders]
+  [matches-by-type invaders]
   (let [invader-type->color (invader-type->color invaders)]
     (reduce-kv
       (fn [acc invader-type matches]
@@ -73,15 +74,15 @@
               (recur (accumulate-matches acc matches color) (rest matches))
               acc))))
       {}
-      results)))
+      matches-by-type)))
 
-(defn print-radar-sample-with-matches
-  [invaders radar-sample results]
-  (when (seq results)
+(defn print-matches-on-radar-sample
+  [{:keys [invaders radar-sample matches-by-type] :as _results}]
+  (when (seq matches-by-type)
     (println "Possible invaders on the radar sample:")
     (let [[width height] (t/text-dimensions radar-sample)
           char-seqs       (t/text-str->char-seqs radar-sample)
-          loc->match-char (build-loc->match-char results invaders)]
+          loc->match-char (build-loc->match-char matches-by-type invaders)]
       (doseq [idy (range height)]
         (println (str/join (map (fn [idx]
                                   (or (get loc->match-char [idx idy])

@@ -90,14 +90,17 @@
   (let [{:keys [do-exit radar-sample-path options]} (validate-args args)]
     (if do-exit
       (exit do-exit)
-      (f/try-all [invaders     (d/build-invaders (:invader options))
-                  radar-sample (d/build-radar-sample radar-sample-path invaders)
-                  results      (d/find-invaders invaders radar-sample options)]
-        (do (p/print-results results)
-            (p/print-radar-sample-with-matches invaders radar-sample results)
-            (exit {:status-code 0
-                   :output-msg  (when (seq results)
-                                  "Show this to the commander, quickly!")}))
+      (f/try-all [invaders        (d/build-invaders (:invader options))
+                  radar-sample    (d/build-radar-sample radar-sample-path invaders)
+                  matches-by-type (d/find-invaders invaders radar-sample options)]
+        (let [results {:invaders        invaders
+                       :radar-sample    radar-sample
+                       :matches-by-type matches-by-type}]
+          (p/print-matches-as-list results)
+          (p/print-matches-on-radar-sample results)
+          (exit {:status-code 0
+                 :output-msg  (when (seq matches-by-type)
+                                "Show this to the commander, quickly!")}))
         (f/when-failed [e]
           (exit {:status-code 2
                  :output-msg  (format "Something went wrong:\n%s"
