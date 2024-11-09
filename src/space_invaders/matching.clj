@@ -187,15 +187,8 @@
 (defn- find-matches-on-edges
   [pattern input full-matches min-sub-pattern min-accuracy]
   (let [fm-locs (set (map :match/location full-matches))]
-    (concat
-      (find-edge-matches :top
-                         pattern input fm-locs min-sub-pattern min-accuracy)
-      (find-edge-matches :left
-                         pattern input fm-locs min-sub-pattern min-accuracy)
-      (find-edge-matches :bottom
-                         pattern input fm-locs min-sub-pattern min-accuracy)
-      (find-edge-matches :right
-                         pattern input fm-locs min-sub-pattern min-accuracy))))
+    (mapcat #(find-edge-matches % pattern input fm-locs min-sub-pattern min-accuracy)
+            [:top :left :bottom :right])))
 
 (defn- find-full-matches
   [{pattern-str :pattern/text [p-width p-height :as p-dims] :pattern/dims :as _pattern}

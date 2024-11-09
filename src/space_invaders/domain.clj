@@ -92,11 +92,11 @@
   (quick-bench
     (find-invaders known-invaders example-radar-sample default-opts))
   ;;Evaluation count : 36 in 6 samples of 6 calls.
-  ;;           Execution time mean : 21,286435 ms
-  ;;  Execution time std-deviation : 3,965614 ms
-  ;; Execution time lower quantile : 18,450143 ms ( 2,5%)
-  ;; Execution time upper quantile : 28,043152 ms (97,5%)
-  ;;                 Overhead used : 7,569705 ns
+  ;;           Execution time mean : 20,643823 ms
+  ;;  Execution time std-deviation : 3,210756 ms
+  ;; Execution time lower quantile : 17,999655 ms ( 2,5%)
+  ;; Execution time upper quantile : 25,564629 ms (97,5%)
+  ;;                 Overhead used : 7,655489 ns
   (bench
     (find-invaders known-invaders example-radar-sample default-opts))
   ;;Evaluation count : 3420 in 60 samples of 57 calls.
